@@ -1,24 +1,74 @@
-import React,{useState,useRef,useEffect} from 'react';import{createRoot}from'react-dom/client';import{Sparkles,SlidersHorizontal,Download,RotateCcw,Mic,MicOff,Volume2,Maximize2,ArrowUpRight,Activity,Orbit,Pause,Play,Check,Code2,Sun,Moon}from'lucide-react';import Presence from './Presence';import GreenBlobStudio from './GreenBlobStudio';
-import SheepStudio from './SheepStudio';
+import React, {Component, Suspense, lazy, useEffect, useState} from 'react';
+import {createRoot} from 'react-dom/client';
+import {ArrowUpRight, ArrowLeft, Sun, Moon, X} from 'lucide-react';
+import Landing from './Landing';
 import './style.css';
-const defaults={form:0,size:1.15,scatter:.025,speed:1,glow:.35,sensitivity:1,scale:1,tint:'#ffffff',motion:true};const states=[['idle','Idle','A quiet, living presence'],['listening','Listening','Attentive. Ready for your voice.'],['thinking','Thinking','Connecting the dots.'],['speaking','Speaking','Ideas finding their voice.']];
-function App(){const[theme,setTheme]=useState(()=>{try{return localStorage.getItem('visage-theme')||'light'}catch{return 'light'}});useEffect(()=>{document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;try{localStorage.setItem('visage-theme',theme)}catch{}},[theme]);const[experiment,setExperiment]=useState(()=>{try{return localStorage.getItem('visage-experiment')||'001'}catch{return '001'}});useEffect(()=>{try{localStorage.setItem('visage-experiment',experiment)}catch{}},[experiment]);const[config,setConfig]=useState(()=>{try{return{...defaults,...JSON.parse(localStorage.getItem('visage-config-v2'))}}catch{return defaults}}),[state,setState]=useState('idle'),[mic,setMic]=useState(false),[level,setLevel]=useState(0),[notice,setNotice]=useState(''),[demo,setDemo]=useState(false),[focus,setFocus]=useState(false),[tab,setTab]=useState('appearance'),[speech,setSpeech]=useState('Hello. I am Visage. A digital presence, brought to life.'),[speaking,setSpeaking]=useState(false);const audio=useRef({});const speechCue=useRef({active:false});const patch=(key,value)=>setConfig(c=>({...c,[key]:value}));useEffect(()=>{localStorage.setItem('visage-config-v2',JSON.stringify(config));},[config]);useEffect(()=>{if(!demo)return;let i=0;setState('idle');const id=setInterval(()=>{setState(states[++i%4][0])},3500);return()=>clearInterval(id)},[demo]);useEffect(()=>{const on=e=>{if(e.key==='Escape')setFocus(false);};window.addEventListener('keydown',on);return()=>{window.removeEventListener('keydown',on);stopMic();window.speechSynthesis?.cancel();}},[]);useEffect(()=>{if(!notice)return;const id=setTimeout(()=>setNotice(''),5500);return()=>clearTimeout(id)},[notice]);
-function stopMic(){audio.current.stream?.getTracks().forEach(t=>t.stop());cancelAnimationFrame(audio.current.frame);audio.current.ctx?.close();audio.current={};setMic(false);setLevel(0)}async function toggleMic(){if(mic){stopMic();return;}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});const ctx=new AudioContext();const analyser=ctx.createAnalyser();analyser.fftSize=256;ctx.createMediaStreamSource(stream).connect(analyser);const data=new Uint8Array(analyser.frequencyBinCount);audio.current={stream,ctx};const loop=()=>{analyser.getByteFrequencyData(data);setLevel(data.reduce((a,b)=>a+b,0)/data.length/95);audio.current.frame=requestAnimationFrame(loop)};loop();setMic(true);setDemo(false);setState('listening');}catch{setNotice('Microphone unavailable. Allow microphone access in your browser to use live audio.')}}
-function speak(){
-if(!('speechSynthesis'in window)){setNotice('Speech playback is unavailable in this browser.');return;}
-if(speaking){speechCue.current={active:false};window.speechSynthesis.cancel();setSpeaking(false);setState('idle');return;}
-setDemo(false);const u=new SpeechSynthesisUtterance(speech);u.rate=.9;
-const finish=()=>{speechCue.current={active:false};setSpeaking(false);setState('idle');};
-u.onstart=()=>{speechCue.current={active:true,text:speech,index:0,stamp:performance.now(),boundary:false};setState('speaking');};
-u.onboundary=e=>{if(e.name==='word')speechCue.current={active:true,text:speech,index:e.charIndex,stamp:performance.now(),boundary:true};};
-u.onend=finish;u.onerror=()=>{finish();setNotice('Speech playback stopped or could not start.');};
-setSpeaking(true);window.speechSynthesis.speak(u);}
 
-function download(){const blob=new Blob([JSON.stringify({version:1,state,...config},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='visage.config.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice('Configuration exported.');}
-const range=(key,label,min,max,step=.01)=><label className="range" key={key}><span>{label}<output>{config[key].toFixed(2)}</output></span><input type="range" min={min} max={max} step={step} value={config[key]} onChange={e=>patch(key,+e.target.value)}/></label>;
-return <div className={focus?'app focused':'app'}><header className="flex items-center justify-between"><a className="brand" href="#"><span className="brand-icon"><Orbit size={23}/></span>visage<span className="studio">STUDIO</span></a><div className="header-right"><nav className="exp-nav" aria-label="Experiments"><button className={experiment==='001'?'active':''} onClick={()=>{setExperiment('001');setFocus(false);}}>001 Visage</button><button className={experiment==='002'?'active':''} onClick={()=>{setExperiment('002');setFocus(false);stopMic();}}>002 Blob</button><button className={experiment==='003'?'active':''} onClick={()=>{setExperiment('003');setFocus(false);stopMic();window.speechSynthesis?.cancel();setSpeaking(false);}}>003 Mallow</button></nav><button className="theme-toggle" aria-label={theme==='light'?'Switch to dark mode':'Switch to light mode'} title={theme==='light'?'Switch to dark mode':'Switch to light mode'} onClick={()=>setTheme(t=>t==='light'?'dark':'light')}>{theme==='light'?<Moon size={15}/>:<Sun size={15}/>}<span>{theme==='light'?'Dark mode':'Light mode'}</span></button><span className="private"><i/> Interactive playground</span>{experiment==='001'&&<button className="export" onClick={download}><Download size={14}/> Export config <ArrowUpRight size={13}/></button>}</div></header><main>
-{experiment==='003'?<SheepStudio focus={focus} setFocus={setFocus} onNotice={setNotice}/>:experiment==='002'?<GreenBlobStudio theme={theme} focus={focus} setFocus={setFocus} onNotice={setNotice}/>:<>
-<section className="intro flex justify-between items-end"><div><div className="eyebrow">A NEW KIND OF PRESENCE</div><h1>More than an orb.<br/><span>A presence.</span></h1><p>Your face. A thousand possibilities. Bring it to life.</p></div><div className="edition">EXPERIMENT 001<span>Pixel-dust / Reactive identity</span></div></section><div className="workspace"><section className="stage"><div className="stage-top"><span><i className={'status '+state}/>{state.toUpperCase()} <b>•</b> REALTIME</span><div><button title="Toggle animation" aria-label="Toggle animation" onClick={()=>patch('motion',!config.motion)}>{config.motion?<Pause size={15}/>:<Play size={15}/>}</button><button title="Focus mode" aria-label="Focus mode" onClick={()=>setFocus(!focus)}><Maximize2 size={15}/></button></div></div><div className="ambient"/><Presence config={config} theme={theme} state={state} audioLevel={mic?level:null} speechCue={speechCue} onError={setNotice}/><div className="stage-caption"><div className={'wave '+state}>{Array.from({length:21},(_,i)=><i key={i} style={{animationDelay:`${i*.09}s`,height:state==='idle'?3:8+Math.sin(i*2)**2*17}}/>)}</div><h2>{states.find(s=>s[0]===state)[2]}</h2><p>Scroll to release pixel dust <span>·</span> Move your cursor to explore</p></div><div className="stage-bottom"><span><span className="tiny-dot"/> WEBGL PARTICLE ENGINE</span><button onClick={()=>{patch('form',config.form>.5?0:1)}}><Orbit size={13}/>{config.form>.5?'Transform to face':'Transform to orb'}</button></div></section><aside><div className="panel-title"><div><SlidersHorizontal size={16}/><h2>Make it yours</h2></div><button title="Reset settings" aria-label="Reset settings" onClick={()=>{setConfig(defaults);setNotice('Default appearance restored.')}}><RotateCcw size={14}/></button></div><div className="tabs"><button className={tab==='appearance'?'selected':''} onClick={()=>setTab('appearance')}>Appearance</button><button className={tab==='behaviour'?'selected':''} onClick={()=>setTab('behaviour')}>Behaviour</button></div>{tab==='appearance'?<><div className="control-heading">FORM <span>01</span></div><div className="form-switch"><button className={config.form<.5?'active':''} onClick={()=>patch('form',0)}><Sparkles size={16}/> Visage</button><button className={config.form>=.5?'active':''} onClick={()=>patch('form',1)}><Orbit size={16}/> Orb</button></div>{range('form','Face → orb',0,1)}<div className="control-heading">PARTICLES <span>02</span></div>{range('size','Particle size',.6,4)}{range('scatter','Dispersion',0,1)}{range('glow','Luminosity',0,1.5)}<div className="control-heading">COLOUR MOOD <span>03</span></div><div className="swatches">{[['#ffffff','Original'],['#a8baff','Indigo'],['#b3ffed','Glacier'],['#ffb8e9','Rose'],['#ffd7a6','Amber']].map(([color,name])=><button key={color} title={name} aria-label={name} className={config.tint===color?'chosen':''} style={{'--swatch':color}} onClick={()=>patch('tint',color)}>{config.tint===color&&<Check size={13}/>}</button>)}<input type="color" aria-label="Custom tint" value={config.tint} onChange={e=>patch('tint',e.target.value)}/></div><p className="helper">A subtle tint over your original palette.</p></>:<><div className="control-heading">MOVEMENT <span>01</span></div>{range('speed','Animation speed',.1,2.5)}{range('sensitivity','Audio sensitivity',.2,3)}{range('scale','Presence scale',.65,1.3)}<label className="toggle"><span>Animate particles</span><input type="checkbox" checked={config.motion} onChange={e=>patch('motion',e.target.checked)}/></label><div className="control-heading">VOICE PREVIEW <span>02</span></div><textarea aria-label="Speech preview text" value={speech} onChange={e=>setSpeech(e.target.value)} maxLength={500}/><button className="voice-button" disabled={!speech.trim()} onClick={speak}><Volume2 size={14}/>{speaking?'Stop voice':'Play voice preview'}</button><p className="helper">Lip and jaw motion follows word events when supported. Phoneme timing is approximated in this preview.</p></>}<div className="panel-note"><Code2 size={15}/><span>Designed to plug into your next AI experience.</span></div></aside></div><section className="state-bar"><div className="state-heading"><span className="eyebrow">EXPLORE STATES</span><span>One identity. Different energies.</span></div><div className="state-buttons">{states.map(([key,label],i)=><button className={state===key?'active':''} key={key} onClick={()=>{setDemo(false);setState(key)}}><span className="state-symbol">{['◌','◉','✳','≋'][i]}</span>{label}<small>0{i+1}</small></button>)}</div><button className={'demo '+(demo?'running':'')} onClick={()=>setDemo(!demo)}>{demo?<Pause size={14}/>:<Play size={14}/>} {demo?'Stop cycle':'Auto cycle'}</button></section><div className="lower"><span><Activity size={14}/> Built to react. Ready to connect.</span><button onClick={toggleMic} className={mic?'mic-on':''}>{mic?<MicOff size={15}/>:<Mic size={15}/>} {mic?'Disable microphone':'Try live microphone'}<ArrowUpRight size={13}/></button></div>
-</>}
-</main><footer><span>VISAGE <b>/</b> REACTIVE PRESENCE</span><span>React <i>·</i> Three.js <i>·</i> Tailwind CSS</span><span>Made of pixels. Full of possibility.</span></footer>{notice&&<div role="status" className="toast">{notice}</div>}</div>}
+const studios = {
+  portrait: lazy(() => import('./VisageStudio')),
+  blob: lazy(() => import('./GreenBlobStudio')),
+  mallow: lazy(() => import('./SheepStudio')),
+};
+const PortraitCapture = lazy(() => import('./PortraitCapture'));
+const names = {portrait: 'Portrait', blob: 'Green Blob', mallow: 'Mallow'};
+function readRoute() { return location.hash.slice(1) || 'home'; }
+class StudioBoundary extends Component {
+  state = {error: false};
+  static getDerivedStateFromError() { return {error: true}; }
+  render() {
+    if (this.state.error) return <div className="studio-fallback"><h1>The studio needs a reset.</h1><p>Reload to try again. A recent browser with WebGL and hardware acceleration is required.</p><button className="button" onClick={() => location.reload()}>Reload studio</button><a href="#home">Back to the exhibition</a></div>;
+    return this.props.children;
+  }
+}
+function App() {
+  const [route, setRoute] = useState(readRoute);
+  const [theme, setTheme] = useState(() => {try {return localStorage.getItem('visage-theme') === 'dark' ? 'dark' : 'light';} catch {return 'light';}});
+  const [focus, setFocus] = useState(false);
+  const [notice, setNotice] = useState('');
+  const character = route.startsWith('studio/') ? route.split('/')[1] : null;
+  const Studio = studios[character];
+  useEffect(() => {
+    const change = () => {setRoute(readRoute()); setFocus(false); setNotice('');};
+    window.addEventListener('hashchange', change);
+    return () => window.removeEventListener('hashchange', change);
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.theme = Studio ? theme : 'exhibit';
+    document.documentElement.style.colorScheme = Studio ? theme : 'light';
+    document.documentElement.style.background = Studio ? '' : '#f7f9f8';
+    try {localStorage.setItem('visage-theme', theme);} catch {}
+  }, [theme, Studio]);
+  useEffect(() => {
+    document.title = Studio ? `${names[character]} studio — Visage` : 'Visage — Soft faces for sharp systems';
+    if (Studio || route === 'home' || route.startsWith('portrait/')) window.scrollTo(0, 0);
+    else requestAnimationFrame(() => document.getElementById(route)?.scrollIntoView({block: 'start'}));
+  }, [route, Studio, character]);
+  useEffect(() => {
+    const escape = e => {if (e.key === 'Escape') setFocus(false);};
+    window.addEventListener('keydown', escape);
+    document.body.style.overflow = focus ? 'hidden' : '';
+    return () => {window.removeEventListener('keydown', escape); document.body.style.overflow = '';};
+  }, [focus]);
+  useEffect(() => {if (!notice) return; const id = setTimeout(() => setNotice(''), 7000); return () => clearTimeout(id);}, [notice]);
+  if (import.meta.env.DEV && route.startsWith('portrait/')) {
+    const shot = route.split('/')[1];
+    return <Suspense fallback={<p>Preparing render…</p>}><PortraitCapture key={shot} name={shot}/></Suspense>;
+  }
+  if (!Studio) return <Landing onNotice={setNotice} notice={notice}/>;
+  return <div className={`app studio-app ${focus ? 'focused' : ''}`} data-ui>
+    <a className="skip-link" href="#studio-content">Skip to studio</a>
+    <header className="studio-header">
+      <a className="brand" href="#home" aria-label="Visage home">visage<span className="brand-dot"/></a>
+      <nav className="exp-nav" aria-label="Choose a character">{Object.entries(names).map(([id, label]) => <a key={id} href={`#studio/${id}`} aria-current={character === id ? 'page' : undefined}>{label}</a>)}</nav>
+      <button className="theme-toggle" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>{theme === 'light' ? <Moon size={18}/> : <Sun size={18}/>}</button>
+    </header>
+    <main id="studio-content" className="studio-main" tabIndex={-1}>
+      <a className="back-link" href="#characters"><ArrowLeft size={16}/> All characters</a>
+      <StudioBoundary key={character}><Suspense fallback={<div className="studio-loading" role="status"><span className="loading-mark"/><h1>Opening {names[character]}.</h1><p>Preparing your interactive 3D studio.</p></div>}><Studio theme={theme} focus={focus} setFocus={setFocus} onNotice={setNotice}/></Suspense></StudioBoundary>
+    </main>
+    <footer className="studio-footer"><a href="#home">Visage</a><span>Made to move. Yours to direct.</span><a href="#integration">Integration guide <ArrowUpRight size={14}/></a></footer>
+    {focus && <button className="exit-focus" onClick={() => setFocus(false)}><X size={18}/> Exit focus</button>}
+    {notice && <div className="toast" role="status">{notice}<button aria-label="Dismiss notification" onClick={() => setNotice('')}><X size={16}/></button></div>}
+  </div>;
+}
 createRoot(document.getElementById('root')).render(<App/>);

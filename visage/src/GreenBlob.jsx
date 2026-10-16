@@ -4,7 +4,7 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js';
 
-const MODEL_URL = '/green_blob.glb';
+const MODEL_URL = import.meta.env.BASE_URL + 'green_blob.glb';
 
 function findByName(root, name) {
   let found = null;

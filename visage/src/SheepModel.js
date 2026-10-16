@@ -163,6 +163,12 @@ export function createSheepModel() {
     ell(hand,'Thumb',[-side*.025,-.063,.09],[.055,.09,.048]).rotation.z=side*.5;
     arms.push(arm);hands.push(hand);
   }
+  // Resting hands: fingers down, palm toward the hip, thumb toward the viewer.
+  // A complete wrist basis avoids the old Z-only rotation, which left palms facing forward.
+  const restingHandRotations=[-1,1].map(side=>new THREE.Quaternion().setFromRotationMatrix(
+    new THREE.Matrix4().makeBasis(V(0,side,0),V(0,0,-1),V(-side,0,0))
+  ));
+  const handTarget=new THREE.Quaternion(),handEuler=new THREE.Euler();
   function updateArms(pose,time,dt,motion){
     arms.forEach((arm,i)=>{
       const side=i?1:-1,raised=pose==='celebrate'||(pose==='wave'&&i===1);
@@ -172,8 +178,11 @@ export function createSheepModel() {
         const sway=pose==='dance'?Math.sin(time*3)*.18:0;points=[[0,-.1,.12],[side*.14,-.3,.18],[side*(.16+sway),-.5,.21],[side*(.15+sway),-.65,.2],[side*(.13+sway),-.77,.18]];turn=side*1.4;
       }
       const blend=1-Math.exp(-9*dt);arm.userData.currentPoints.forEach((p,k)=>p.forEach((v,j)=>p[j]=THREE.MathUtils.lerp(v,points[k][j],blend)));
-      arm.userData.forearm.updateShape(arm.userData.currentPoints);hands[i].position.set(...arm.userData.currentPoints[4]);hands[i].rotation.z=THREE.MathUtils.damp(hands[i].rotation.z,turn,9,dt);
-      const tucked=!raised&&pose!=='relaxed'&&pose!=='dance';hands[i].rotation.x=THREE.MathUtils.damp(hands[i].rotation.x,tucked?Math.PI:0,9,dt);
+      arm.userData.forearm.updateShape(arm.userData.currentPoints);hands[i].position.set(...arm.userData.currentPoints[4]);
+      const lowered=pose==='relaxed'||pose==='dance',tucked=!raised&&!lowered;
+      if(lowered)handTarget.copy(restingHandRotations[i]);
+      else handTarget.setFromEuler(handEuler.set(tucked?Math.PI:0,0,turn));
+      hands[i].quaternion.slerp(handTarget,blend);
     });
   }
   const legs=[];

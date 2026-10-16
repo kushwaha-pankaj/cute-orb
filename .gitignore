@@ -26,3 +26,5 @@ Thumbs.db
 *.log
 npm-debug.log*
 /tmp/
+visage/.caps/
+visage/.taste-skill/

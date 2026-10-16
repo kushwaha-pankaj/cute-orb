@@ -30,7 +30,7 @@ const blobDefaults = applyExpressionToConfig(
     fillLight: 0.85,
     rimLight: 0.7,
     exposure: 1.05,
-    motion: true,
+    motion: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     autoRotate: false,
     spinSpeed: 1.2,
     bobAmount: 0.035,
@@ -88,7 +88,7 @@ export default function GreenBlobStudio({theme, focus, setFocus, onNotice}) {
   const [readyInfo, setReadyInfo] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('greenblob-config-v1', JSON.stringify(config));
+    try { localStorage.setItem('greenblob-config-v1', JSON.stringify(config)); } catch {}
   }, [config]);
 
   const patch = (key, value) =>
@@ -154,18 +154,10 @@ export default function GreenBlobStudio({theme, focus, setFocus, onNotice}) {
     <>
       <section className="intro flex justify-between items-end">
         <div>
-          <div className="eyebrow">CUTE ORB MASCOT</div>
-          <h1>
-            Meet the green blob.
-            <br />
-            <span>Fully 3D.</span>
-          </h1>
-          <p>Loaded from Blender as GLB. Orbit, customise parts, expressions, and studio light.</p>
+          <h1>Green Blob</h1>
+          <p>A little bounce, a big grin. Shape its look and body language.</p>
         </div>
-        <div className="edition">
-          EXPERIMENT 002
-          <span>glTF / Green Blob mascot</span>
-        </div>
+        <a className="studio-help-link" href="#integration">Integration guide ↗</a>
       </section>
 
       <div className="workspace blob-workspace">
@@ -247,7 +239,7 @@ export default function GreenBlobStudio({theme, focus, setFocus, onNotice}) {
           {tab === 'look' && (
             <>
               <div className="control-heading">
-                BODY COLOUR <span>01</span>
+                BODY COLOUR
               </div>
               <div className="swatches">
                 {bodySwatches.map(([color, name]) => (
@@ -271,7 +263,7 @@ export default function GreenBlobStudio({theme, focus, setFocus, onNotice}) {
               </div>
 
               <div className="control-heading">
-                FACE <span>02</span>
+                FACE
               </div>
               <div className="form-switch" style={{marginBottom: 14}}>
                 {[
@@ -304,7 +296,7 @@ export default function GreenBlobStudio({theme, focus, setFocus, onNotice}) {
               {toggle('motion', 'Idle bob')}
 
               <div className="control-heading">
-                MOTION <span>03</span>
+                MOTION
               </div>
               {range('bobAmount', 'Bob amount', 0, 0.12)}
               {range('bobSpeed', 'Bob speed', 0.2, 3)}
@@ -316,7 +308,7 @@ export default function GreenBlobStudio({theme, focus, setFocus, onNotice}) {
           {tab === 'parts' && (
             <>
               <div className="control-heading">
-                ELEMENTS <span>01</span>
+                ELEMENTS
               </div>
               <div className="part-grid">
                 <button
@@ -369,7 +361,7 @@ export default function GreenBlobStudio({theme, focus, setFocus, onNotice}) {
           {tab === 'studio' && (
             <>
               <div className="control-heading">
-                BACKDROP <span>01</span>
+                BACKDROP
               </div>
               <div className="swatches">
                 {studioSwatches.map(([color, name]) => (
@@ -408,7 +400,7 @@ export default function GreenBlobStudio({theme, focus, setFocus, onNotice}) {
               )}
 
               <div className="control-heading">
-                LIGHTS <span>02</span>
+                LIGHTS
               </div>
               {range('ambient', 'Ambient', 0, 1.5)}
               {range('keyLight', 'Key light', 0, 4)}
@@ -429,7 +421,7 @@ export default function GreenBlobStudio({theme, focus, setFocus, onNotice}) {
 
       <section className="state-bar blob-expr-bar">
         <div className="state-heading">
-          <span className="eyebrow">EXPRESSIONS</span>
+          <span className="control-label">EXPRESSIONS</span>
           <span>From the technical sheet strip.</span>
         </div>
         <div className="state-buttons blob-expr-buttons">
