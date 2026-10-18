@@ -1,20 +1,23 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
-import {ArrowUpRight} from 'lucide-react';
+import {ArrowUpRight, AudioLines, Copy, Check, Plus, Minus} from 'lucide-react';
+import '@fontsource-variable/urbanist';
 import './Landing.css';
 
+const HeroMallow = lazy(() => import('./HeroMallow'));
 const LiveMallow = lazy(() => import('./LiveMallow'));
 const asset = name => `${import.meta.env.BASE_URL}images/${name}`;
+const notes = `${import.meta.env.BASE_URL}integration.md`;
 
 const cast = [
   {
-    id: 'portrait',
-    name: 'Portrait',
-    material: 'Pixel dust',
-    image: 'portrait.png',
-    alt: 'Particle portrait presence rendered in the Visage studio',
-    fact: 'Face to orb · reacts to voice',
-    disc: '#06525c',
-    href: '#studio/portrait',
+    id: 'mallow',
+    name: 'Mallow',
+    material: 'Wool and attitude',
+    image: 'mallow-happy.png',
+    alt: 'Mallow the ivory wool sheep with arms crossed',
+    fact: '24 moods · 7 AI states · 5 poses',
+    tint: '#d4cac0',
+    href: '#studio/mallow',
   },
   {
     id: 'blob',
@@ -23,80 +26,60 @@ const cast = [
     image: 'blob.png',
     alt: 'Green three-dimensional blob mascot with a wide grin',
     fact: 'Eight looks · parts you can hide',
-    disc: '#0a6b78',
+    tint: '#9cc08f',
     href: '#studio/blob',
   },
   {
-    id: 'mallow',
-    name: 'Mallow',
-    material: 'Wool and attitude',
-    image: 'mallow.png',
-    alt: 'Mallow the ivory wool sheep in the Visage studio',
-    fact: '24 moods · 7 AI states · 5 poses',
-    disc: '#14808c',
-    href: '#studio/mallow',
-    liveImage: 'mallow-happy.png',
+    id: 'portrait',
+    name: 'Portrait',
+    material: 'Pixel dust',
+    image: 'portrait.png',
+    alt: 'Particle portrait presence glowing blue on black',
+    fact: 'Face to orb · reacts to voice',
+    tint: '#121212',
+    dark: true,
+    href: '#studio/portrait',
   },
 ];
 
-const folders = [
-  {id: 'cast', label: 'The cast', tone: 'paper'},
-  {id: 'session', label: 'A session', tone: 'soft'},
-  {id: 'cue', label: 'The cue', tone: 'mid'},
-  {id: 'ask', label: 'Ask away', tone: 'deep'},
-  {id: 'studio', label: 'Studio', tone: 'ink', href: '#studio/mallow'},
+const visemes = [
+  {key: 'A', h: 72},
+  {key: 'E', h: 44},
+  {key: 'O', h: 88},
+  {key: 'U', h: 52},
+  {key: 'M', h: 26},
+  {key: 'F', h: 38},
 ];
 
 const sessionSteps = [
-  {
-    title: 'Choose',
-    clause: 'First you pick a face.',
-    card: {label: 'Presence', value: 'Mallow', note: 'Wool · expressive'},
-  },
-  {
-    title: 'Shape',
-    clause: 'Then you find its mood.',
-    card: {label: 'Expression', value: 'Curious', note: 'Gaze · mouth · pose'},
-  },
-  {
-    title: 'Export',
-    clause: 'You leave with settings.',
-    card: {label: 'Export', value: 'JSON', note: 'PNG capture for Mallow'},
-  },
-  {
-    title: 'Plug in',
-    clause: 'Your events drive the face.',
-    card: {label: 'Controller', value: 'mallow.setState', note: 'Listening · speaking'},
-  },
+  {title: 'Choose', clause: 'Pick a face for your product.', chip: 'Mallow'},
+  {title: 'Shape', clause: 'Dial in gaze, mouth and pose.', chip: 'curious · 0.8'},
+  {title: 'Export', clause: 'Leave with settings as JSON.', chip: 'mallow.json'},
+  {title: 'Plug in', clause: 'Your app events drive the face.', chip: "setState('speaking')"},
 ];
 
 const faqs = [
   {
-    tab: 'Product',
     question: 'Is Visage an AI assistant?',
     answer:
       'Visage is a visual character studio. The demos run without an account or API key. You connect your own assistant or app events to drive the controller.',
   },
   {
-    tab: 'Browser',
     question: 'What do I need to run it?',
     answer:
       'A recent browser with WebGL and hardware acceleration. Mallow is detailed and prefers a desktop GPU. Microphone access needs HTTPS or localhost.',
   },
   {
-    tab: 'Mic',
     question: 'Where does microphone audio go?',
     answer:
       'Levels are measured in your browser to animate the mouth. This app does not record or upload microphone audio. Browser speech may use your browser’s voice service.',
   },
   {
-    tab: 'Export',
     question: 'What can I take away?',
     answer:
       'Each studio exports settings as JSON. Mallow can also capture a PNG. The procedural sheep is not a rigged GLB export.',
   },
   {
-    tab: 'Code',
     question: 'How do I drive Mallow?',
     answer:
       'Open the Mallow studio, then call window.mallow from your page or console. setState, setExpression, setGaze, setViseme and setAudioLevel cover the common cues.',
@@ -111,14 +94,29 @@ mallow.setState('speaking');
 mallow.setViseme('O');
 mallow.setAudioLevel(0.6);`;
 
+const nav = [
+  {href: '#home', label: 'Home'},
+  {href: '#cast', label: 'Cast'},
+  {href: '#session', label: 'Session'},
+  {href: '#cue', label: 'Code'},
+  {href: '#ask', label: 'FAQ'},
+];
+
+function canRender3D() {
+  try {
+    return !!document.createElement('canvas').getContext('webgl2');
+  } catch {
+    return false;
+  }
+}
+
 export default function Landing({onNotice, notice}) {
-  const [active, setActive] = useState(0);
   const [live, setLive] = useState(false);
+  const [hero3D, setHero3D] = useState(canRender3D);
   const [openFaq, setOpenFaq] = useState(0);
   const [copied, setCopied] = useState(false);
   const [menu, setMenu] = useState(false);
   const root = useRef(null);
-  const current = cast[active];
 
   useEffect(() => {
     const nodes = root.current?.querySelectorAll('[data-reveal]');
@@ -149,246 +147,286 @@ export default function Landing({onNotice, notice}) {
   }
 
   return (
-    <div className="exhibit" ref={root}>
+    <div className="lp" ref={root}>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
 
-      <header className="ex-header">
-        <a className="ex-mark" href="#home" aria-label="Visage home">
-          visage
-          <span className="ex-dot" aria-hidden="true" />
-        </a>
-        <button
-          className="ex-menu"
-          aria-expanded={menu}
-          aria-controls="ex-nav"
-          onClick={() => setMenu(m => !m)}
-        >
-          {menu ? 'Close' : 'Menu'}
-        </button>
-        <nav id="ex-nav" className={menu ? 'is-open' : ''} aria-label="Main" onClick={() => setMenu(false)}>
-          <a href="#cast">The cast</a>
-          <a href="#session">A session</a>
-          <a href="#ask">Ask away</a>
-        </nav>
-        <a className="ex-header-cta" href="#studio/mallow">
-          Enter studio <ArrowUpRight size={16} />
-        </a>
-      </header>
-
-      <main id="main-content" tabIndex={-1}>
-        <section className="ex-hero" aria-labelledby="hero-title">
-          <div className="ex-motif" aria-hidden="true" />
-          <div className="ex-hero-copy">
-            <h1 id="hero-title">VISAGE</h1>
-            <p>Soft faces for sharp systems.</p>
+      <div className="lp-frame">
+        <header className="lp-header">
+          <a className="lp-logo" href="#home" aria-label="Visage home">
+            <img src={asset('mallow-happy.png')} alt="" width="34" height="34" />
+            Visage
+          </a>
+          <button
+            className="lp-menu"
+            aria-expanded={menu}
+            aria-controls="lp-nav"
+            onClick={() => setMenu(m => !m)}
+          >
+            {menu ? 'Close' : 'Menu'}
+          </button>
+          <nav id="lp-nav" className={menu ? 'is-open' : ''} aria-label="Main" onClick={() => setMenu(false)}>
+            {nav.map((item, index) => (
+              <a key={item.href} href={item.href} aria-current={index === 0 ? 'page' : undefined}>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          <div className="lp-header-end">
+            <a className="lp-link" href={notes} download>
+              Docs
+            </a>
+            <a className="lp-ghost" href="#studio/mallow">
+              Enter studio
+            </a>
           </div>
+        </header>
 
-          <div className="ex-folders" data-ui>
-            {folders.map((folder, index) => {
-              const Tag = folder.href ? 'a' : 'div';
-              return (
-                <Tag
-                  key={folder.id}
-                  className={`ex-folder tone-${folder.tone} ${index === folders.length - 1 ? 'is-front' : ''}`}
-                  href={folder.href}
-                  style={{'--i': index}}
-                >
-                  <span className="ex-folder-tab">{folder.label}</span>
-                  {index === folders.length - 1 && (
-                    <span className="ex-folder-action">
-                      Open Mallow <ArrowUpRight size={18} />
-                    </span>
-                  )}
-                </Tag>
-              );
-            })}
-          </div>
-        </section>
+        <main id="main-content" tabIndex={-1}>
+          <section className="lp-hero" aria-labelledby="hero-title">
+            <h1 id="hero-title" className="lp-title">
+              <span className="lp-line one">
+                Soft Faces
+                <a className="lp-pill" href="#studio/blob" aria-label="Open Green Blob">
+                  <img src={asset('blob.png')} alt="" width="736" height="736" />
+                </a>
+              </span>
+              <span className="lp-line two">
+                <span className="lp-for">for sharp</span>
+                Systems
+              </span>
+            </h1>
 
-        <section className="ex-cast" id="cast" aria-labelledby="cast-title">
-          <div className="ex-cast-layout">
-            <ol className="ex-cast-list" data-reveal>
-              <li className="ex-cast-heading" id="cast-title">
-                Meet the cast
-              </li>
-              {cast.map((item, index) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    className={active === index ? 'is-active' : ''}
-                    aria-pressed={active === index}
-                    onClick={() => {
-                      setActive(index);
-                      setLive(false);
-                    }}
-                    onMouseEnter={() => {
-                      if (!matchMedia('(hover: none)').matches) {
-                        setActive(index);
+            <div className="lp-stage" aria-hidden={!hero3D}>
+              <div className="lp-glow" />
+              {hero3D ? (
+                <Suspense fallback={null}>
+                  <HeroMallow expression="excited" pose="wave" onError={() => setHero3D(false)} />
+                </Suspense>
+              ) : (
+                <img className="lp-stage-still" src={asset('mallow-happy.png')} alt="Mallow the sheep" />
+              )}
+            </div>
+
+            <p className="lp-lede">
+              Expressive 3D characters for your assistant or app. Pick a face, give it a mood, and let your
+              own events make it listen, think and speak.
+            </p>
+
+            <figure className="lp-widget" aria-label="Lip sync visemes Mallow can show">
+              <figcaption>Lip sync</figcaption>
+              <div className="lp-bars">
+                {visemes.map((v, i) => (
+                  <div key={v.key} className="lp-bar">
+                    <span className={i % 3 === 2 ? 'blue' : ''} style={{'--h': `${v.h}%`, '--d': `${i * 0.18}s`}} />
+                    <small>{v.key}</small>
+                  </div>
+                ))}
+              </div>
+            </figure>
+
+            <a className="lp-cta" href="#studio/mallow">
+              Get started
+            </a>
+          </section>
+
+          <section className="lp-row" aria-label="Highlights">
+            <article className="lp-card pink" data-reveal>
+              <a className="lp-tile" href="#studio/blob" aria-label="Open Green Blob studio">
+                <img src={asset('blob.png')} alt="" width="736" height="736" loading="lazy" />
+              </a>
+              <div className="lp-card-body">
+                <p className="lp-score">
+                  <strong>3 faces</strong>
+                  <span>ready to drive</span>
+                </p>
+                <ul className="lp-people">
+                  {cast.map(item => (
+                    <li key={item.id}>
+                      <a href={item.href}>
+                        <img src={asset(item.image)} alt="" width="44" height="44" loading="lazy" style={{background: item.tint}} />
+                        <span>
+                          <b>{item.name}</b>
+                          {item.fact}
+                        </span>
+                        <em>{item.material}</em>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+
+            <article className="lp-card lilac" data-reveal>
+              <span className="lp-icon" aria-hidden="true">
+                <AudioLines size={22} />
+              </span>
+              <p>Moods you can call from code</p>
+              <strong className="lp-big">24</strong>
+              <a className="lp-ghost small" href={notes} download>
+                Read the notes <ArrowUpRight size={15} />
+              </a>
+            </article>
+          </section>
+        </main>
+      </div>
+
+      <section className="lp-section" id="cast" aria-labelledby="cast-title">
+        <div className="lp-head" data-reveal>
+          <p className="lp-kicker">The cast</p>
+          <h2 id="cast-title">Three faces, one controller</h2>
+        </div>
+        <div className="lp-cast">
+          {cast.map((item, index) => (
+            <article
+              key={item.id}
+              className={`lp-cast-card ${item.dark ? 'dark' : ''}`}
+              style={{'--tint': item.tint, '--delay': `${index * 80}ms`}}
+              data-reveal
+            >
+              <div className="lp-cast-art">
+                {live && item.id === 'mallow' ? (
+                  <Suspense fallback={<p className="lp-wait">Warming wool…</p>}>
+                    <LiveMallow
+                      expression="joyful"
+                      background={item.tint}
+                      onError={message => {
+                        onNotice(message);
                         setLive(false);
-                      }
-                    }}
-                  >
-                    {item.name}
-                  </button>
-                </li>
-              ))}
-            </ol>
-
-            <div className="ex-disc-stage" data-reveal style={{'--disc': current.disc}}>
-              <div className="ex-disc" aria-hidden="true" />
-              <div className="ex-disc-object" key={current.id}>
-                {live && current.id === 'mallow' ? (
-                  <Suspense fallback={<p className="ex-live-wait">Warming wool…</p>}>
-                    <LiveMallow expression="joyful" onError={message => {onNotice(message); setLive(false);}} />
+                      }}
+                    />
                   </Suspense>
                 ) : (
-                  <img
-                    src={asset(live && current.liveImage ? current.liveImage : current.image)}
-                    alt={current.alt}
-                    width="655"
-                    height="880"
-                  />
+                  <img src={asset(item.image)} alt={item.alt} width="655" height="880" loading="lazy" />
                 )}
               </div>
-              <p className="ex-disc-fact">{current.fact}</p>
-              <div className="ex-disc-actions" data-ui>
-                <a className="ex-button" href={current.href}>
-                  Open {current.name} <ArrowUpRight size={18} />
-                </a>
-                {current.id === 'mallow' && (
-                  <button type="button" className="ex-text-btn" onClick={() => setLive(v => !v)}>
-                    {live ? 'Still frame' : 'Bring to life'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-          <p className="ex-cast-material" data-reveal>
-            {current.material}. Same invitation: make it move.
-          </p>
-          <div className="ex-cast-strip" data-reveal aria-hidden="true">
-            {cast.map(item => (
-              <img key={item.id} src={asset(item.image)} alt="" width="88" height="88" loading="lazy" />
-            ))}
-            <img src={asset('mallow-hero.png')} alt="" width="88" height="88" loading="lazy" />
-          </div>
-        </section>
-
-        <section className="ex-session" id="session" aria-labelledby="session-title">
-          <div className="ex-session-grid">
-            {sessionSteps.map((step, index) => (
-              <article className={`ex-session-field tone-${index}`} key={step.title} data-reveal style={{'--delay': `${index * 70}ms`}}>
-                {index === 0 && <h2 id="session-title">A session</h2>}
-                <p className="ex-session-clause">{step.clause}</p>
-                <div className="ex-session-card" data-ui>
-                  <span>{step.card.label}</span>
-                  <strong>{step.card.value}</strong>
-                  <small>{step.card.note}</small>
+              <div className="lp-cast-info">
+                <div>
+                  <h3>{item.name}</h3>
+                  <p>{item.material}</p>
                 </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="ex-cue" id="cue" aria-labelledby="cue-title">
-          <div className="ex-cue-copy" data-reveal>
-            <h2 id="cue-title">Give it a cue</h2>
-            <p>You bring the events. Mallow brings the face.</p>
-            <a className="ex-text-btn" href="#studio/mallow">
-              Try it in studio <ArrowUpRight size={16} />
-            </a>
-          </div>
-          <div className="ex-code" data-ui data-reveal>
-            <div className="ex-code-bar">
-              <span>mallow · javascript</span>
-              <button type="button" onClick={copyCode}>
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-            </div>
-            <pre>
-              <code>{code}</code>
-            </pre>
-            <a href={`${import.meta.env.BASE_URL}integration.md`} download>
-              Integration notes
-            </a>
-          </div>
-          <figure className="ex-cue-pic" data-reveal>
-            <img src={asset('mallow-happy.png')} alt="Mallow with a brighter expression" width="655" height="880" loading="lazy" />
-          </figure>
-          <figure className="ex-cue-film" data-reveal>
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              poster={`${import.meta.env.BASE_URL}media/clay-wheel-poster.jpg`}
-              width="608"
-              height="1080"
-              aria-label="Pottery wheel forming soft clay, atmosphere for the clay blob"
-            >
-              <source src={`${import.meta.env.BASE_URL}media/clay-wheel.webm`} type="video/webm" />
-            </video>
-          </figure>
-        </section>
-
-        <section className="ex-faq" id="ask" aria-labelledby="faq-title">
-          <h2 id="faq-title" data-reveal>
-            Ask away
-          </h2>
-          <div className="ex-faq-stack" data-reveal>
-            {faqs.map((item, index) => (
-              <button
-                type="button"
-                key={item.tab}
-                className={`ex-faq-card tone-${index % 3} ${openFaq === index ? 'is-open' : ''}`}
-                style={{'--i': index}}
-                aria-expanded={openFaq === index}
-                onClick={() => setOpenFaq(index)}
-              >
-                <span className="ex-faq-tab">{item.tab}</span>
-                <span className="ex-faq-q">{item.question}</span>
-                {openFaq === index && <span className="ex-faq-a">{item.answer}</span>}
-              </button>
-            ))}
-          </div>
-        </section>
-      </main>
-
-      <footer className="ex-footer">
-        <div className="ex-wordmark" aria-label="Visage">
-          {'VISAGE'.split('').map((letter, index) => (
-            <span key={letter + index} style={{'--h': `${70 + (index % 3) * 15}%`}}>
-              {letter}
-            </span>
+                <small>{item.fact}</small>
+                <div className="lp-cast-actions">
+                  <a className="lp-cta small" href={item.href}>
+                    Open studio <ArrowUpRight size={16} />
+                  </a>
+                  {item.id === 'mallow' && (
+                    <button type="button" className="lp-link" onClick={() => setLive(v => !v)}>
+                      {live ? 'Still frame' : 'Bring to life'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </article>
           ))}
         </div>
-        <div className="ex-footer-links">
-          <a href="#studio/portrait">Open Portrait</a>
-          <a href="#studio/blob">Open Green Blob</a>
-          <a href="#studio/mallow">Open Mallow</a>
-          <a href="#ask">Ask away</a>
-          <a href={`${import.meta.env.BASE_URL}integration.md`} download>
-            Integration notes
-          </a>
-          <p>React · Three.js · your events</p>
-          <p>No account. No invented AI backend.</p>
+      </section>
+
+      <section className="lp-section" id="session" aria-labelledby="session-title">
+        <div className="lp-head" data-reveal>
+          <p className="lp-kicker">A session</p>
+          <h2 id="session-title">From a blank face to a live one</h2>
         </div>
-        <div className="ex-footer-end">
-          <span>© {new Date().getFullYear()} Visage</span>
-          <a className="ex-button small" href="#studio/mallow">
-            Meet your presence <ArrowUpRight size={16} />
-          </a>
+        <ol className="lp-steps">
+          {sessionSteps.map((step, index) => (
+            <li key={step.title} className={`lp-step t${index}`} data-reveal style={{'--delay': `${index * 70}ms`}}>
+              <span className="lp-step-n">0{index + 1}</span>
+              <h3>{step.title}</h3>
+              <p>{step.clause}</p>
+              <code>{step.chip}</code>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="lp-section lp-cue" id="cue" aria-labelledby="cue-title">
+        <div className="lp-code" data-reveal>
+          <div className="lp-code-bar">
+            <span className="lp-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span>mallow.js</span>
+            <button type="button" onClick={copyCode} aria-label="Copy code">
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          <pre>
+            <code>{code}</code>
+          </pre>
         </div>
-        <p className="credits">
-          Footage:{' '}
-          <a href="https://commons.wikimedia.org/wiki/File:%D0%93%D1%80%D0%BD%D1%87%D0%B0%D1%80%D1%81%D0%BA%D0%BE_%D0%BA%D0%BE%D0%BB%D1%86%D0%B5.webm">
-            “Грнчарско колце”
-          </a>{' '}
-          by Lili Arsova, <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.en">CC0</a>, via Wikimedia Commons.
-        </p>
+        <div className="lp-cue-card" data-reveal>
+          <img src={asset('mallow-sassy.png')} alt="Mallow giving a sideways, knowing look" width="630" height="700" loading="lazy" />
+          <div>
+            <p className="lp-kicker">The cue</p>
+            <h2 id="cue-title">You bring the events. Mallow brings the face.</h2>
+            <div className="lp-cast-actions">
+              <a className="lp-cta small" href="#studio/mallow">
+                Try it in studio <ArrowUpRight size={16} />
+              </a>
+              <a className="lp-link" href={notes} download>
+                Integration notes
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-section lp-faq" id="ask" aria-labelledby="faq-title">
+        <div className="lp-head" data-reveal>
+          <p className="lp-kicker">Ask away</p>
+          <h2 id="faq-title">Good questions</h2>
+          <p className="lp-sub">No account. No invented AI backend. Just faces you can direct.</p>
+        </div>
+        <div className="lp-faq-list" data-reveal>
+          {faqs.map((item, index) => {
+            const open = openFaq === index;
+            return (
+              <div key={item.question} className={`lp-faq-item ${open ? 'is-open' : ''}`}>
+                <button type="button" aria-expanded={open} onClick={() => setOpenFaq(open ? -1 : index)}>
+                  {item.question}
+                  {open ? <Minus size={18} /> : <Plus size={18} />}
+                </button>
+                {open && <p>{item.answer}</p>}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <footer className="lp-footer">
+        <div className="lp-band" data-reveal>
+          <div>
+            <h2>Meet your presence</h2>
+            <p>Open a studio and make it move in under a minute.</p>
+            <a className="lp-cta" href="#studio/mallow">
+              Get started
+            </a>
+          </div>
+          <div className="lp-band-faces" aria-hidden="true">
+            {cast.map(item => (
+              <img key={item.id} src={asset(item.image)} alt="" style={{background: item.tint}} loading="lazy" />
+            ))}
+          </div>
+        </div>
+        <div className="lp-foot">
+          <a className="lp-logo" href="#home">
+            <img src={asset('mallow-happy.png')} alt="" width="34" height="34" />
+            Visage
+          </a>
+          <nav aria-label="Footer">
+            <a href="#studio/portrait">Portrait</a>
+            <a href="#studio/blob">Green Blob</a>
+            <a href="#studio/mallow">Mallow</a>
+            <a href={notes} download>
+              Integration notes
+            </a>
+          </nav>
+          <span>© {new Date().getFullYear()} Visage · React · Three.js</span>
+        </div>
       </footer>
 
       {notice && (

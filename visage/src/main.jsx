@@ -35,7 +35,7 @@ function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = Studio ? theme : 'exhibit';
     document.documentElement.style.colorScheme = Studio ? theme : 'light';
-    document.documentElement.style.background = Studio ? '' : '#f7f9f8';
+    document.documentElement.style.background = Studio ? '' : '#f8f3ee';
     try {localStorage.setItem('visage-theme', theme);} catch {}
   }, [theme, Studio]);
   useEffect(() => {

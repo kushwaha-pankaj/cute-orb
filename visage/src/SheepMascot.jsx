@@ -9,17 +9,17 @@ import {createSheepModel} from './SheepModel';
 export default function SheepMascot({config,audioLevel=0,onReady,onError,controlRef}){
   const host=useRef();const live=useRef();live.current={config,audioLevel,onReady,onError};
   useEffect(()=>{
-    const el=host.current;let renderer;
-    try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,preserveDrawingBuffer:true})}catch{live.current.onError?.('WebGL is unavailable. Enable hardware acceleration to render the sheep.');return}
+    const el=host.current;let renderer;const clear=!!live.current.config.transparent;
+    try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:clear,preserveDrawingBuffer:true})}catch{live.current.onError?.('WebGL is unavailable. Enable hardware acceleration to render the sheep.');return}
     renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.VSMShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;el.appendChild(renderer.domElement);
     renderer.domElement.setAttribute('aria-label','Interactive 3D sheep mascot. Drag to orbit and scroll to zoom.');
-    const scene=new THREE.Scene();scene.fog=new THREE.Fog('#d5c9be',11,27);const camera=new THREE.PerspectiveCamera(31,1,.1,100);camera.position.set(-.25,2.5,10.4);
-    const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,2.02,0);controls.update();controls.enableDamping=true;controls.enablePan=false;controls.minDistance=5.3;controls.maxDistance=14;controls.maxPolarAngle=Math.PI*.53;
+    const scene=new THREE.Scene();if(!clear)scene.fog=new THREE.Fog('#d5c9be',11,27);const camera=new THREE.PerspectiveCamera(31,1,.1,100);camera.position.set(-.25,2.5,10.4);
+    const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,2.02,0);controls.update();controls.enableDamping=true;controls.enablePan=false;controls.minDistance=5.3;controls.maxDistance=14;controls.maxPolarAngle=Math.PI*.53;if(clear){controls.enableZoom=false;controls.minPolarAngle=controls.maxPolarAngle=Math.PI*.47}
     const pmrem=new THREE.PMREMGenerator(renderer);const room=new RoomEnvironment();const env=pmrem.fromScene(room,.04);scene.environment=env.texture;scene.environmentIntensity=.7;room.dispose();pmrem.dispose();
     scene.add(new THREE.HemisphereLight('#fff5e6','#95877b',1.1));
     const key=new THREE.DirectionalLight('#fff2df',2.2);key.position.set(-3,7,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-4;key.shadow.camera.right=4;key.shadow.camera.top=5;key.shadow.camera.bottom=-3;key.shadow.normalBias=.025;key.shadow.bias=-.0002;key.shadow.radius=4;key.shadow.blurSamples=8;scene.add(key);
     const fill=new THREE.DirectionalLight('#f2f4ff',1.3);fill.position.set(4,3,-2);scene.add(fill);
-    const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:'#d5c9be',roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=.015;ground.receiveShadow=true;scene.add(ground);
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),clear?new THREE.ShadowMaterial({opacity:.16}):new THREE.MeshStandardMaterial({color:'#d5c9be',roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=.015;ground.receiveShadow=true;scene.add(ground);
     // Broad soft contact shadow supplements realtime cast shadows.
     const sc=document.createElement('canvas');sc.width=sc.height=128;const sx=sc.getContext('2d'),sg=sx.createRadialGradient(64,64,3,64,64,64);sg.addColorStop(0,'rgba(60,40,25,.25)');sg.addColorStop(1,'rgba(60,40,25,0)');sx.fillStyle=sg;sx.fillRect(0,0,128,128);const shadowTexture=new THREE.CanvasTexture(sc);const shadow=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.3),new THREE.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.025;scene.add(shadow);
     const rig=createSheepModel();scene.add(rig.root);let frame,elapsed=0,previous=performance.now(),nextBlink=2.7,blinkTime=0,faceTick=0;const smooth={...FACE_BASE,blink:0};
@@ -28,7 +28,7 @@ export default function SheepMascot({config,audioLevel=0,onReady,onError,control
     if(controlRef)controlRef.current=api;live.current.onReady?.();
     const damp=(a,b,dt)=>THREE.MathUtils.damp(a,b,9,dt);
     function animate(now){frame=requestAnimationFrame(animate);const dt=Math.min((now-previous)/1000,.05);previous=now;const c=live.current.config;if(c.motion)elapsed+=dt*c.speed;const t=elapsed;
-      scene.background=new THREE.Color(c.background);scene.fog.color.set(c.background);ground.material.color.set(c.background);rig.skin.color.set(c.skin);rig.faceSkin.color.set(c.skin);rig.wool.color.set(c.wool);renderer.toneMappingExposure=c.exposure;camera.zoom=c.zoom;camera.updateProjectionMatrix();controls.autoRotate=c.autoRotate&&c.motion;controls.autoRotateSpeed=.8;controls.update();
+      if(!clear){scene.background=new THREE.Color(c.background);scene.fog.color.set(c.background);ground.material.color.set(c.background)}rig.skin.color.set(c.skin);rig.faceSkin.color.set(c.skin);rig.wool.color.set(c.wool);renderer.toneMappingExposure=c.exposure;camera.zoom=c.zoom;camera.updateProjectionMatrix();controls.autoRotate=c.autoRotate&&c.motion;controls.autoRotateSpeed=.8;controls.update();
       const target={...FACE_BASE,...SHEEP_EXPRESSIONS[c.expression]};if(c.motion&&c.state==='idle'){target.lookX+=Math.sin(t*.43)*.045;target.lookY+=Math.sin(t*.31)*.025}
       if(c.state==='thinking'){target.lookX=Math.sin(t*.7)*.55;target.lookY=.5;target.brow=.35;target.tilt=-.14}
       if(c.state==='listening'){target.eyes=.95;target.tilt=.15;target.brow=.2}
