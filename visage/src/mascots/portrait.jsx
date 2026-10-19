@@ -72,5 +72,5 @@ export default {
     },
   ],
 
-  voice: {line: 'Hello. I am Visage. A digital presence, brought to life.'},
+  voice: {line: 'Hello. I am Mascotty. A digital presence, brought to life.'},
 };

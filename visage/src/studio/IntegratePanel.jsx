@@ -1,12 +1,10 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {Bot, Check, Code2, Copy, Download, Globe, Link2, Settings2, TriangleAlert, X} from 'lucide-react';
+import {Bot, Check, Code2, Copy, Download, Globe, Link2, Settings2, X} from 'lucide-react';
 import {
   agentPrompt,
   changedSettings,
   encodeConfig,
-  hostUrl,
   htmlSnippet,
-  isLocalHost,
   jsSnippet,
   reactSnippet,
   studioLink,
@@ -51,13 +49,24 @@ export default function IntegratePanel({meta, def, config, onClose, onExport, on
   const [bake, setBake] = useState(true);
   const [transparent, setTransparent] = useState(false);
   const closeRef = useRef(null);
+  const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
+    const previous = document.activeElement;
     closeRef.current?.focus();
-    const key = e => e.key === 'Escape' && onClose();
+    const key = e => {
+      if (e.key === 'Escape') { e.preventDefault(); onCloseRef.current(); }
+      if (e.key !== 'Tab') return;
+      const items = [...dialogRef.current.querySelectorAll('a[href], button, input, select, textarea, [tabindex="0"]')].filter(el => !el.disabled && el.getClientRects().length);
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !dialogRef.current.contains(document.activeElement))) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !dialogRef.current.contains(document.activeElement))) { e.preventDefault(); first?.focus(); }
+    };
     window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
-  }, [onClose]);
+    return () => { window.removeEventListener('keydown', key); if (previous?.isConnected) previous.focus(); };
+  }, []);
 
   const changed = useMemo(() => changedSettings(def, config), [def, config]);
   const encoded = bake ? encodeConfig(changed) : '';
@@ -70,7 +79,7 @@ export default function IntegratePanel({meta, def, config, onClose, onExport, on
 
   return (
     <div className="st-dialog-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-      <section className="st-dialog st-glass" role="dialog" aria-modal="true" aria-labelledby="st-dialog-title">
+      <section ref={dialogRef} className="st-dialog st-glass" role="dialog" aria-modal="true" aria-labelledby="st-dialog-title">
         <header className="st-dialog-head">
           <div>
             <p className="st-kicker">Integrate</p>
@@ -81,15 +90,6 @@ export default function IntegratePanel({meta, def, config, onClose, onExport, on
           </button>
         </header>
 
-        {isLocalHost() && (
-          <p className="st-warning" role="note">
-            <TriangleAlert size={16} />
-            <span>
-              These snippets point to <code>{hostUrl()}</code>, which only works on this computer. Deploy Visage (
-              <code>npm run build</code>) and copy them from the deployed studio to use on a live site.
-            </span>
-          </p>
-        )}
 
         <div className="st-dialog-options">
           <label className="st-toggle">
@@ -129,9 +129,9 @@ export default function IntegratePanel({meta, def, config, onClose, onExport, on
           {tab === 'react' && (
             <>
               <p className="st-step">
-                <b>1</b> Add this component, then render <code>{'<VisageMascot state={assistantState} />'}</code>.
+                <b>1</b> Add this component, then render <code>{states.length ? '<MascottyMascot state={assistantState} />' : '<MascottyMascot expression={expression} />'}</code>.
               </p>
-              <CopyBlock label="VisageMascot.jsx" text={reactSnippet(shared)} onNotice={onNotice} primary tall />
+              <CopyBlock label="MascottyMascot.jsx" text={reactSnippet(shared)} onNotice={onNotice} primary tall />
             </>
           )}
 
@@ -154,8 +154,8 @@ export default function IntegratePanel({meta, def, config, onClose, onExport, on
                 <button type="button" className="st-pill" onClick={onExport}>
                   <Download size={14} /> Download JSON
                 </button>
-                <a className="st-pill" href={`${import.meta.env.BASE_URL}integration.md`} download>
-                  <Link2 size={14} /> Integration notes
+                <a className="st-pill" href="#docs/quick-start">
+                  <Link2 size={14} /> Developer documentation
                 </a>
               </div>
             </>

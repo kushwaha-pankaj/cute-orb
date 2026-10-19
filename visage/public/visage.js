@@ -1,10 +1,10 @@
 /*!
- * Visage embed loader: put a Visage mascot on any web page.
+ * Mascotty embed loader: put a Mascotty mascot on any web page.
  *
- *   <div data-visage="mallow" style="width:320px;height:400px"></div>
- *   <script src="https://YOUR-VISAGE-HOST/visage.js"></script>   (no defer, so later scripts can use Visage)
+ *   <div data-mascotty="mallow" style="width:320px;height:400px"></div>
+ *   <script src="https://YOUR-MASCOTTY-HOST/visage.js"></script>   (no defer, so later scripts can use Mascotty)
  *
- *   const mascot = Visage.get('mallow');      // or Visage.mount(element, {mascot: 'mallow', config})
+ *   const mascot = Mascotty.get('mallow');      // or Mascotty.mount(element, {mascot: 'mallow', config})
  *   mascot.setState('thinking');              // idle · listening · thinking · speaking …
  *   mascot.setExpression('happy');
  *   mascot.setAudioLevel(0.6);                // 0..1, e.g. from your text-to-speech audio
@@ -12,16 +12,19 @@
  *   mascot.on('ready', info => console.log(info.states, info.expressions));
  *   mascot.destroy();
  *
- * Attributes: data-visage (mascot id), data-config (settings code from the studio),
+ * Attributes: data-mascotty (mascot id; data-visage remains supported), data-config (settings code from the studio),
  * data-background="transparent" (blend into your page), data-follow-page="false" (only follow
  * the cursor while it is over the mascot).
  */
 (function () {
   'use strict';
-  if (window.Visage) return;
+  if (window.Mascotty || window.Visage) {
+    window.Mascotty = window.Visage = window.Mascotty || window.Visage;
+    return;
+  }
 
   var script = document.currentScript;
-  var HOST = (script && script.src ? script.src : location.href).replace(/\/visage\.js(\?.*)?$/, '');
+  var HOST = (script && script.src ? script.src : location.href).replace(/\/(?:visage|mascotty)\.js(\?.*)?$/, '');
   var ORIGIN = new URL(HOST, location.href).origin;
   var instances = [];
   var callId = 0;
@@ -57,6 +60,7 @@
       if (event.source !== frame.contentWindow || event.origin !== ORIGIN) return;
       var data = event.data;
       if (!data || data.visage !== 1) return;
+      if (data.event === 'error') { self._emit('error', data.error); return; }
       if (data.event === 'ready') {
         self.info = data.info;
         var queued = self._queue;
@@ -83,6 +87,7 @@
   }
 
   Mascot.prototype._post = function (message) {
+    if (this._destroyed) return;
     message.visage = 1;
     if (!this.info) return this._queue.push(message);
     this.frame.contentWindow.postMessage(message, ORIGIN);
@@ -108,6 +113,11 @@
   Mascot.prototype.reset = function () { return this._send('reset', []); };
   Mascot.prototype.call = function (method) { return this._send('call', Array.prototype.slice.call(arguments)); };
   Mascot.prototype.destroy = function () {
+    if (this._destroyed) return;
+    this._destroyed = true;
+    this._queue = [];
+    this._listeners = {};
+    if (this.element.__visage === this) delete this.element.__visage;
     window.removeEventListener('message', this._onMessage);
     window.removeEventListener('pointermove', this._onPointer);
     this.frame.remove();
@@ -117,9 +127,9 @@
 
   function mount(element, options) {
     if (typeof element === 'string') element = document.querySelector(element);
-    if (!element) throw new Error('Visage.mount: element not found');
+    if (!element) throw new Error('Mascotty.mount: element not found');
     options = options || {};
-    if (!options.mascot) throw new Error('Visage.mount: options.mascot is required, e.g. "mallow"');
+    if (!options.mascot) throw new Error('Mascotty.mount: options.mascot is required, e.g. "mallow"');
     if (element.__visage) element.__visage.destroy();
     var mascot = new Mascot(element, options);
     element.__visage = mascot;
@@ -128,10 +138,10 @@
   }
 
   function scan(root) {
-    (root || document).querySelectorAll('[data-visage]').forEach(function (el) {
+    (root || document).querySelectorAll('[data-mascotty], [data-visage]').forEach(function (el) {
       if (el.__visage) return;
       mount(el, {
-        mascot: el.getAttribute('data-visage'),
+        mascot: el.getAttribute('data-mascotty') || el.getAttribute('data-visage'),
         config: el.getAttribute('data-config') || '',
         background: el.getAttribute('data-background') || '',
         followPage: el.getAttribute('data-follow-page') !== 'false',
@@ -140,7 +150,7 @@
     });
   }
 
-  /** Visage.get('mallow') returns that mascot, waiting for it if the page hasn't mounted it yet. */
+  /** Mascotty.get('mallow') returns that mascot, waiting for it if the page hasn't mounted it yet. */
   function get(target) {
     if (target && target.nodeType === 1) return target.__visage || null;
     for (var i = 0; i < instances.length; i++) if (instances[i].id === target) return instances[i];
@@ -149,7 +159,7 @@
     return null;
   }
 
-  window.Visage = {mount: mount, get: get, scan: scan, host: HOST, version: '1'};
+  window.Visage = window.Mascotty = {mount: mount, get: get, scan: scan, host: HOST, version: '1'};
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { scan(); });
   else scan();
 })();

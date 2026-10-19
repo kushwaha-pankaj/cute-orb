@@ -8,7 +8,8 @@
   --line: #e7dfd7;
   --sunken: rgb(27 27 29 / 0.06);
   --orange: #e2690f;
-  --orange-hover: #d15e08;
+  --orange-action: #c15408;
+  --orange-hover: #aa4305;
   --orange-soft: #ffe2c7;
   --blue: #5c7fe6;
   --glass: rgb(255 253 251 / 0.74);
@@ -181,7 +182,7 @@
   padding: 0 22px;
   border: 0;
   border-radius: 999px;
-  background: var(--orange);
+  background: var(--orange-action);
   color: #fff !important;
   font-size: 15px;
   font-weight: 650;
@@ -242,7 +243,7 @@
   transform: translateY(-1px);
 }
 .st-icon[aria-pressed='true'] {
-  background: var(--orange);
+  background: var(--orange-action);
   color: #fff !important;
 }
 
@@ -260,7 +261,7 @@
   white-space: nowrap;
 }
 .st-mini[aria-pressed='true'] {
-  background: var(--orange);
+  background: var(--orange-action);
   color: #fff !important;
 }
 
@@ -281,6 +282,8 @@
   gap: 10px;
   min-width: 0;
 }
+.st-top-start { flex: 1; }
+.st-top-end { flex-shrink: 0; }
 .st-logo {
   display: inline-flex;
   align-items: center;
@@ -296,10 +299,7 @@
 .st-logo img {
   width: 30px;
   height: 30px;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: 50% 22%;
-  background: #d4cac0;
+  object-fit: contain;
 }
 .st-switch {
   display: flex;
@@ -489,7 +489,7 @@
   background: var(--sunken);
 }
 .st-toolbar .st-icon[aria-pressed='true'] {
-  background: var(--orange);
+  background: var(--orange-action);
 }
 .st-toolbar .st-mini {
   min-height: 36px;
@@ -581,7 +581,7 @@
   transform: translateY(-1px);
 }
 .st-chips button[aria-pressed='true'] {
-  background: var(--orange);
+  background: var(--orange-action);
   color: #fff !important;
 }
 .st-chips button[aria-pressed='true'] span {

@@ -1,12 +1,15 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
-import {ArrowUpRight, AudioLines, Bot, Copy, Check, Code2, Globe, Plus, Minus, Plug, TriangleAlert} from 'lucide-react';
+import {ArrowUpRight, AudioLines, Bot, Copy, Check, Code2, Globe, Plus, Minus, Plug, Github} from 'lucide-react';
 import '@fontsource-variable/urbanist';
 import {mascots, featured, totalMoods} from './mascots';
-import {agentPrompt, hostUrl, htmlSnippet, isLocalHost, jsSnippet, reactSnippet} from './integration';
+import {agentPrompt, htmlSnippet, jsSnippet, reactSnippet} from './integration';
+import {repositoryUrl} from './site';
 import './Landing.css';
 
+const FooterWordmark = lazy(() => import('./FooterWordmark'));
+
 const asset = name => `${import.meta.env.BASE_URL}images/${name}`;
-const notes = `${import.meta.env.BASE_URL}integration.md`;
+const notes = '#docs/quick-start';
 const studioHref = m => `#studio/${m.id}`;
 const words = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
 const say = n => words[n] || String(n);
@@ -40,14 +43,14 @@ const sessionSteps = [
 
 const faqs = [
   {
-    question: 'Is Visage an AI assistant?',
+    question: 'Is Mascotty an AI assistant?',
     answer:
-      'Visage is a visual character studio. The demos run without an account or API key. You connect your own assistant or app events to drive the controller.',
+      'Mascotty is a visual character studio. The demos run without an account or API key. You connect your own assistant or app events to drive the controller.',
   },
   {
     question: 'What do I need to run it?',
     answer:
-      'A recent browser with WebGL and hardware acceleration. The detailed characters prefer a desktop GPU. Microphone access needs HTTPS or localhost.',
+      'A recent browser with WebGL and hardware acceleration. The detailed characters prefer a desktop GPU. Microphone access requires a secure HTTPS connection.',
   },
   {
     question: 'Where does microphone audio go?',
@@ -76,6 +79,7 @@ const nav = [
   {href: '#cast', label: 'Cast'},
   {href: '#session', label: 'Session'},
   {href: '#developers', label: 'Developers'},
+  {href: '#community', label: 'Community'},
   {href: '#ask', label: 'FAQ'},
 ];
 
@@ -90,11 +94,29 @@ function canRender3D() {
 export default function Landing({onNotice, notice}) {
   const [live, setLive] = useState(null);
   const [hero3D, setHero3D] = useState(canRender3D);
+  const [heroVisible, setHeroVisible] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
   const [copied, setCopied] = useState(false);
   const [devTab, setDevTab] = useState('html');
   const [menu, setMenu] = useState(false);
   const root = useRef(null);
+  const stage = useRef(null);
+  const footer = useRef(null);
+  const [footerNear, setFooterNear] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => setHeroVisible(entry.isIntersecting));
+    if (stage.current) observer.observe(stage.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setFooterNear(true); observer.disconnect(); }
+    }, {rootMargin: '400px'});
+    if (footer.current) observer.observe(footer.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const nodes = root.current?.querySelectorAll('[data-reveal]');
@@ -139,9 +161,9 @@ export default function Landing({onNotice, notice}) {
 
       <div className="lp-frame">
         <header className="lp-header">
-          <a className="lp-logo" href="#home" aria-label="Visage home">
-            <img src={asset(featured.image)} alt="" width="34" height="34" />
-            Visage
+          <a className="lp-logo" href="#home" aria-label="Mascotty home">
+            <img src={asset('mascotty-logo.png')} alt="" width="34" height="34" />
+            Mascotty
           </a>
           <button
             className="lp-menu"
@@ -152,14 +174,14 @@ export default function Landing({onNotice, notice}) {
             {menu ? 'Close' : 'Menu'}
           </button>
           <nav id="lp-nav" className={menu ? 'is-open' : ''} aria-label="Main" onClick={() => setMenu(false)}>
-            {nav.map((item, index) => (
-              <a key={item.href} href={item.href} aria-current={index === 0 ? 'page' : undefined}>
+            {nav.map(item => (
+              <a key={item.href} href={item.href} aria-current={(location.hash || '#home') === item.href ? 'page' : undefined}>
                 {item.label}
               </a>
             ))}
           </nav>
           <div className="lp-header-end">
-            <a className="lp-link" href={notes} download>
+            <a className="lp-link" href={notes}>
               Docs
             </a>
             <a className="lp-ghost" href={studioHref(featured)}>
@@ -183,9 +205,9 @@ export default function Landing({onNotice, notice}) {
               </span>
             </h1>
 
-            <div className="lp-stage" aria-hidden={!hero3D}>
+            <div className="lp-stage" ref={stage} aria-hidden={!hero3D}>
               <div className="lp-glow" />
-              {Hero && hero3D ? (
+              {Hero && hero3D && heroVisible ? (
                 <Suspense fallback={null}>
                   <Hero {...featured.heroProps} onError={() => setHero3D(false)} />
                 </Suspense>
@@ -258,8 +280,8 @@ export default function Landing({onNotice, notice}) {
               </span>
               <p>Moods &amp; states across the cast</p>
               <strong className="lp-big">{totalMoods}</strong>
-              <a className="lp-ghost small" href={notes} download>
-                Read the notes <ArrowUpRight size={15} />
+              <a className="lp-ghost small" href={notes}>
+                Developer docs <ArrowUpRight size={15} />
               </a>
             </article>
           </section>
@@ -385,7 +407,7 @@ export default function Landing({onNotice, notice}) {
                   {id: 'react', label: 'React', icon: Code2},
                   {id: 'agent', label: 'AI agent', icon: Bot},
                 ].map(t => (
-                  <button key={t.id} type="button" role="tab" aria-selected={devTab === t.id} onClick={() => setDevTab(t.id)}>
+                  <button key={t.id} id={`dev-tab-${t.id}`} aria-controls="dev-code-panel" type="button" role="tab" aria-selected={devTab === t.id} onClick={() => setDevTab(t.id)}>
                     <t.icon size={13} /> {t.label}
                   </button>
                 ))}
@@ -400,14 +422,12 @@ export default function Landing({onNotice, notice}) {
                 {copied === devTab ? 'Copied' : 'Copy'}
               </button>
             </div>
-            <pre role="tabpanel">
+            <pre id="dev-code-panel" role="tabpanel" aria-labelledby={`dev-tab-${devTab}`} tabIndex={0}>
               <code>{devCode[devTab]}</code>
             </pre>
             <p className="lp-code-note">
-              {isLocalHost() ? <TriangleAlert size={14} /> : <Globe size={14} />}
-              {isLocalHost()
-                ? `Served from ${hostUrl()}: deploy Visage to get snippets that work on a live site.`
-                : `Served from ${hostUrl()}`}
+              <Globe size={14} /> Ready for your website · HTML, React or your AI coding agent.
+              <a href={notes}>Read the integration guide <ArrowUpRight size={14} /></a>
             </p>
           </div>
         </div>
@@ -435,37 +455,70 @@ export default function Landing({onNotice, notice}) {
         </div>
       </section>
 
-      <footer className="lp-footer">
-        <div className="lp-band" data-reveal>
-          <div>
-            <h2>Meet your presence</h2>
-            <p>Open a studio and make it move in under a minute.</p>
-            <a className="lp-cta" href={studioHref(featured)}>
-              Get started
+      <section className="lp-community lp-section" id="community" aria-labelledby="community-title">
+        <div className="lp-community-story" data-reveal>
+          <h2 id="community-title">Open source.<br />Shared imagination.</h2>
+          <p>Mascotty is for the community. A place for developers, designers and character makers to build a more expressive web, together.</p>
+          <img className="lp-community-mark" src={asset('mascotty-logo.png')} alt="" width="240" height="240" loading="lazy" />
+        </div>
+        <div className="lp-community-invite" data-reveal>
+          <h3>Your ideas belong here.</h3>
+          <p>Explore the source, help a character find its next expression, or make the integration better for the next developer. Every thoughtful contribution counts.</p>
+          <p className="lp-community-license">MIT licensed. Free to use, change and build on, with attribution.</p>
+          <a className="lp-cta" href={repositoryUrl} target="_blank" rel="noreferrer">
+            <Github size={19} /> Explore on GitHub <ArrowUpRight size={18} />
+          </a>
+          <div className="lp-community-paths">
+            <a href="#docs/contributing">
+              <span>Build with us<small>Start with the contributor guide</small></span><ArrowUpRight size={22} />
             </a>
-          </div>
-          <div className="lp-band-faces" aria-hidden="true">
-            {mascots.slice(0, 4).map(item => (
-              <img key={item.id} src={asset(item.image)} alt="" style={{background: item.tint}} loading="lazy" />
-            ))}
+            <a href={`${repositoryUrl}/issues`} target="_blank" rel="noreferrer">
+              <span>Bring an idea<small>Suggest a feature or report a bug</small></span><ArrowUpRight size={22} />
+            </a>
           </div>
         </div>
-        <div className="lp-foot">
-          <a className="lp-logo" href="#home">
-            <img src={asset(featured.image)} alt="" width="34" height="34" />
-            Visage
-          </a>
-          <nav aria-label="Footer">
-            {mascots.map(m => (
-              <a key={m.id} href={studioHref(m)}>
-                {m.name}
-              </a>
-            ))}
-            <a href={notes} download>
-              Integration notes
+      </section>
+
+      <footer className="lp-footer" id="footer" ref={footer}>
+        <div className="lp-footer-inner">
+          <div className="lp-footer-top">
+            <div data-reveal>
+              <h2>A little character.<br />A lot of possibility.</h2>
+              <p>Give your next project a face of its own.</p>
+            </div>
+            <a className="lp-cta" href={studioHref(featured)}>Make it yours <ArrowUpRight size={20} /></a>
+          </div>
+          <div className="lp-footer-links">
+            <a className="lp-logo" href="#home" aria-label="Mascotty home">
+              <img src={asset('mascotty-logo.png')} alt="" width="38" height="38" />
+              <span>Mascotty<small>Soft faces for sharp systems.</small></span>
             </a>
-          </nav>
-          <span>© {new Date().getFullYear()} Visage · React · Three.js</span>
+            <nav aria-label="Explore Mascotty">
+              <h3>Meet the cast</h3>
+              {mascots.map(m => <a key={m.id} href={studioHref(m)}>{m.name} <ArrowUpRight size={14} /></a>)}
+            </nav>
+            <nav aria-label="Developer resources">
+              <h3>Make it work</h3>
+              <a href="#developers">Quick start</a>
+              <a href={notes}>Integration guide</a>
+              <a href={`${repositoryUrl}/tree/main/visage`} target="_blank" rel="noreferrer">Source code <ArrowUpRight size={14} /></a>
+            </nav>
+            <nav aria-label="Community resources">
+              <h3>Make it together</h3>
+              <a href="#community">Our community</a>
+              <a href="#docs/contributing">Contribute <ArrowUpRight size={14} /></a>
+              <a href={`${repositoryUrl}/issues`} target="_blank" rel="noreferrer">Ideas & issues <ArrowUpRight size={14} /></a>
+            </nav>
+          </div>
+          {footerNear ? <Suspense fallback={<div className="lp-wordmark" aria-hidden="true"><span>Mascotty</span></div>}>
+            <FooterWordmark />
+          </Suspense> : <div className="lp-wordmark" aria-hidden="true"><span>Mascotty</span></div>}
+          <div className="lp-footer-bottom">
+            <span>© {new Date().getFullYear()} Mascotty. Made for the community.</span>
+            <a href={repositoryUrl} target="_blank" rel="noreferrer"><Github size={16} /> Open source, open possibilities.</a>
+            <a href="#docs/license">MIT licensed</a>
+            <a href="#home">Back to top ↑</a>
+          </div>
         </div>
       </footer>
 

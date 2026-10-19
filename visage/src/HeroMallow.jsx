@@ -13,7 +13,7 @@ export default function HeroMallow({expression = 'happy', pose = 'reference', on
       follow: true,
       expression,
       pose,
-      zoom: 1.12,
+      zoom: 0.92,
       motion: !matchMedia('(prefers-reduced-motion: reduce)').matches,
     };
   }

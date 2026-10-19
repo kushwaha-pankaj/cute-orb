@@ -20,10 +20,23 @@ function readSaved(def) {
 /** Keep only keys the mascot knows, with plain values. Protects against junk in links and messages. */
 export function sanitize(def, values) {
   const clean = {};
-  for (const [key, value] of Object.entries(values || {})) {
-    if (!(key in def.defaults)) continue;
+  if (!values || typeof values !== 'object' || Array.isArray(values)) return clean;
+  const controls = (def.panels || []).flatMap(panel => panel.controls || []);
+  for (const [key, value] of Object.entries(values)) {
+    if (!Object.hasOwn(def.defaults, key)) continue;
     const kind = typeof def.defaults[key];
-    if (kind === typeof value && (kind === 'number' ? Number.isFinite(value) : true)) clean[key] = value;
+    if (kind !== typeof value || (kind === 'number' && !Number.isFinite(value))) continue;
+    const range = controls.find(control => control.key === key && control.type === 'range');
+    if (range) {
+      clean[key] = Math.max(range.min, Math.min(range.max, value));
+      continue;
+    }
+    const choice = controls.find(control => control.key === key && ['choice', 'select'].includes(control.type));
+    const options = key === def.states?.key ? def.states.options : key === def.expressions?.key ? def.expressions.options : choice?.options;
+    if (options && !options.some(option => option.id === value)) continue;
+    const color = controls.find(control => control.key === key && ['color', 'swatches'].includes(control.type));
+    if (color && !/^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(value)) continue;
+    clean[key] = value;
   }
   return clean;
 }
@@ -32,6 +45,7 @@ export function initialConfig(def, {persist = true, overrides} = {}) {
   let saved = persist ? readSaved(def) : {};
   for (const key of def.transient || []) delete saved[key];
   if (def.migrate && Object.keys(saved).length) saved = def.migrate(saved);
+  saved = sanitize(def, saved);
   const config = {...def.defaults, ...saved, ...sanitize(def, overrides)};
   if ('motion' in def.defaults && !('motion' in saved) && !(overrides && 'motion' in overrides) && reducedMotion()) {
     config.motion = false;

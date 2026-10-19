@@ -46,7 +46,7 @@ import IntegratePanel from './IntegratePanel';
  */
 
 const asset = name => `${import.meta.env.BASE_URL}images/${name}`;
-const notes = `${import.meta.env.BASE_URL}integration.md`;
+const notes = '#docs/quick-start';
 function download(href, name) {
   const a = document.createElement('a');
   a.href = href;
@@ -67,9 +67,9 @@ export function StudioTopBar({meta, theme, setTheme, children}) {
   return (
     <header className="st-top">
       <div className="st-top-start">
-        <a className="st-logo st-glass" href="#home" aria-label="Visage home">
-          <img src={asset(mascots[0].image)} alt="" width="30" height="30" />
-          <span>Visage</span>
+        <a className="st-logo st-glass" href="#home" aria-label="Mascotty home">
+          <img src={asset('mascotty-logo.png')} alt="" width="30" height="30" />
+          <span>Mascotty</span>
         </a>
         <nav className="st-switch st-glass" aria-label="Choose a character">
           {mascots.map(m => (
@@ -394,8 +394,8 @@ export default function Studio({meta, def, theme, setTheme, onNotice, overrides}
                     <button type="button" className="st-pill" onClick={copyCode}>
                       {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Copied' : 'Copy'}
                     </button>
-                    <a className="st-pill" href={notes} download>
-                      Notes ↗
+                    <a className="st-pill" href={notes}>
+                      Developer docs ↗
                     </a>
                   </div>
                 </details>

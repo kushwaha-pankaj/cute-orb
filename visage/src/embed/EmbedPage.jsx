@@ -5,7 +5,7 @@ import {decodeConfig} from '../integration';
 /**
  * #embed/<id>?c=<settings>&bg=transparent
  *
- * A chromeless mascot for other websites, loaded in an iframe by public/visage.js.
+ * A chromeless mascot for other websites, loaded in an iframe by public/mascotty.js.
  * The host page talks to it with postMessage: {visage: 1, id, method, args}.
  * It answers {visage: 1, event: 'ready', info} once, then {visage: 1, event: 'result', id, ok, error}.
  */
@@ -18,6 +18,7 @@ export default function EmbedPage({meta, query}) {
 
   useEffect(() => {
     const root = document.documentElement;
+    const previous = {background: root.style.background, bodyBackground: document.body.style.background, overflow: document.body.style.overflow};
     root.style.background = 'transparent';
     document.body.style.background = 'transparent';
     document.body.style.overflow = 'hidden';
@@ -25,9 +26,16 @@ export default function EmbedPage({meta, query}) {
     meta
       .load()
       .then(mod => alive && setDef(mod.default))
-      .catch(() => alive && setFailed(true));
+      .catch(() => {
+        if (!alive) return;
+        setFailed(true);
+        if (window.parent !== window) window.parent.postMessage({visage: 1, event: 'error', error: 'This mascot could not load. Check your connection and try again.'}, '*');
+      });
     return () => {
       alive = false;
+      root.style.background = previous.background;
+      document.body.style.background = previous.bodyBackground;
+      document.body.style.overflow = previous.overflow;
     };
   }, [meta]);
 
@@ -126,7 +134,10 @@ function Embed({meta, def, query}) {
         pointer={pointerRef}
         controlRef={controlRef}
         onReady={() => {}}
-        onError={message => console.warn(`[visage] ${message}`)}
+        onError={message => {
+          console.warn(`[Mascotty] ${message}`);
+          if (window.parent !== window) window.parent.postMessage({visage: 1, event: 'error', error: message}, '*');
+        }}
       />
     </div>
   );

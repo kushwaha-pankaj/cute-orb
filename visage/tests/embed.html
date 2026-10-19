@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mascotty embed smoke test</title>
+<style>body{font:16px system-ui;margin:24px;background:#f8f3ee;color:#222}main{display:flex;flex-wrap:wrap;gap:16px}.mascot{width:240px;height:300px}button{padding:12px}pre{white-space:pre-wrap}</style>
+<h1>Real iframe integration test</h1>
+<p>Checks all characters from a separate host, including queued commands, errors and remounting.</p>
+<button id="lifecycle" disabled>Exercise lifecycle</button> <a href="../">Back to Mascotty</a>
+<pre id="result" role="status">Loading the embed loader…</pre><main id="cast"></main>
+<script>
+ const result = document.querySelector('#result');
+ const host = new URLSearchParams(location.search).get('host') || location.origin;
+ document.querySelector('a').href = host;
+ const script = document.createElement('script');
+ script.src = host + '/mascotty.js';
+ script.onerror = () => result.textContent = 'FAIL: loader unavailable';
+ script.onload = () => {
+   const ready = new Set();
+   const instances = new Map();
+   const show = () => result.textContent = ready.size === 3 ? 'PASS: all three characters ready; early commands queued and flushed.' : 'Ready: ' + [...ready].join(', ');
+   for (const id of ['mallow', 'blob', 'portrait']) {
+     const element = document.createElement('div'); element.className = 'mascot'; element.id = id;
+     document.querySelector('#cast').appendChild(element);
+     const mascot = Mascotty.mount(element, {mascot: id, background: 'transparent'});
+     instances.set(id, mascot);
+     mascot.set({motion: false, follow: false});
+     if (id !== 'blob') mascot.setState('thinking');
+     else mascot.setExpression('happy');
+     mascot.on('ready', info => { ready.add(info.mascot); show(); document.querySelector('#lifecycle').disabled = ready.size !== 3; });
+     mascot.on('error', message => { if (!message.startsWith('Unknown state')) result.textContent = 'FAIL: ' + id + ': ' + message; });
+   }
+   document.querySelector('#lifecycle').onclick = () => {
+     const original = instances.get('mallow');
+     original.on('error', message => {
+       if (!message.startsWith('Unknown state')) return;
+       original.destroy();
+       if (Mascotty.get(document.querySelector('#mallow')) !== null) { result.textContent = 'FAIL: stale instance'; return; }
+       const fresh = Mascotty.mount('#mallow', {mascot: 'mallow', background: 'transparent'});
+       fresh.set({motion:false});
+       fresh.setState('idle');
+       fresh.on('ready', () => {
+         const invalidHost = document.createElement('div');
+         document.querySelector('#cast').appendChild(invalidHost);
+         const invalid = Mascotty.mount(invalidHost, {mascot: 'not-a-character'});
+         invalid.on('error', message => {
+           if (!message.startsWith('Unknown mascot')) { result.textContent = 'FAIL: unexpected error: ' + message; return; }
+           invalid.destroy(); invalidHost.remove();
+           result.textContent = 'PASS: all three iframe characters, queued commands, validated errors, destroy/remount and unknown-character reporting.';
+         });
+       });
+     });
+     original.setState('definitely-invalid');
+   };
+ };
+ document.head.appendChild(script);
+</script></html>

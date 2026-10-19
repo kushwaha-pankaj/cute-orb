@@ -19,6 +19,15 @@ html {
 body {
   margin: 0;
 }
+.page-error {
+  max-width: 620px;
+  margin: 12vh auto;
+  padding: 32px;
+  font-size: 18px;
+}
+.page-error h1 { font-size: 36px; line-height: 1.1; margin-bottom: 20px; }
+.page-error p { margin-bottom: 24px; }
+.page-error a, .page-error button { display: inline-block; margin: 8px 16px 8px 0; text-decoration: underline; cursor: pointer; }
 button,
 input,
 textarea,

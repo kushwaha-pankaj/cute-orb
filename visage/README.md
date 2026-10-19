@@ -1,4 +1,4 @@
-# Visage — soft faces for sharp systems
+# Mascotty — soft faces for sharp systems
 
 Browser character studio for interactive AI presences. Today's cast: Mallow the wool sheep, the Green Blob, and a particle Portrait.
 
@@ -9,26 +9,34 @@ npm ci
 npm run dev
 ```
 
-Production: `npm run build` then `npm run preview`.
+Checks: `npm test`. Production build: `npm run build`; verify it with `npm run preview` and deploy the complete `dist/` directory over HTTPS.
+
+Use Node.js 22 or later. The GitHub Pages workflow sets `VISAGE_BASE` for subdirectory hosting. To serve embeds from a different published origin, set `VITE_PUBLIC_SITE_URL=https://your-host.example/path` at build time. Preview-generated snippets use the project's published address rather than a preview-only origin.
+
+## Community and license
+
+Mascotty is an open-source project for the community, licensed under [MIT](../LICENSE). See [CONTRIBUTING.md](../CONTRIBUTING.md) to get involved. Third-party dependencies and reference artwork retain their original licenses.
 
 ## Routes
 
 | Hash | What you get |
 |---|---|
 | `#home` | Landing page |
+| `#docs/quick-start` | Built-in developer documentation |
+| `#docs/<guide>?section=<heading>` | A guide with a direct section link |
 | `#studio/<id>` | Studio for any mascot in the registry (`mallow`, `blob`, `portrait`) |
 | `#studio/<id>?c=…` | Studio opened with shared settings (from Use on your site → Settings) |
-| `#embed/<id>?c=…&bg=transparent` | Chromeless mascot used by `public/visage.js` on other websites |
+| `#embed/<id>?c=…&bg=transparent` | Chromeless mascot used by `public/mascotty.js` on other websites |
 
 ## Put a mascot on another website
 
 ```html
-<div data-visage="mallow" style="width: 320px; height: 400px"></div>
-<script src="https://YOUR-VISAGE-HOST/visage.js"></script>
-<script>Visage.get('mallow').setState('thinking');</script>
+<div data-mascotty="mallow" style="width: 320px; height: 400px"></div>
+<script src="https://kushwaha-pankaj.github.io/cute-orb/mascotty.js"></script>
+<script>Mascotty.get('mallow').setState('thinking');</script>
 ```
 
-The studio's **Use on your site** button generates this (plus React and an AI-agent prompt) with your settings baked in. The full guide is in [`public/integration.md`](public/integration.md), also served at `/integration.md`. Snippets point at wherever Visage is hosted, so deploy `dist/` to a static HTTPS host first.
+The studio's **Use on your site** button generates this (plus React and an AI-agent prompt) with your settings baked in. The built-in documentation starts at `#docs/quick-start` and includes API, React, deployment and contribution guides. Snippets point at wherever Mascotty is hosted, so deploy `dist/` to a static HTTPS host first.
 
 ## How it fits together
 
@@ -37,7 +45,7 @@ The studio's **Use on your site** button generates this (plus React and an AI-ag
 - `src/studio/Studio.jsx` — the one studio that renders any definition. `controls.jsx` holds the schema-driven controls, `useVoice.js` the speech and microphone preview.
 - `src/Landing.jsx` + `Landing.css` — landing page.
 - `src/integration.js` — settings codes, share links and every snippet/prompt (one source for studio, landing and docs).
-- `src/embed/EmbedPage.jsx` + `public/visage.js` — the embed route and the loader other websites include.
+- `src/embed/EmbedPage.jsx` + `public/mascotty.js` — the embed route and the loader other websites include.
 - Renderers: `SheepMascot.jsx` (Mallow), `GreenBlob.jsx`, `Presence.jsx` (Portrait), `HeroMallow.jsx` (transparent hero).
 
 ## Adding a mascot
@@ -66,7 +74,7 @@ To make a mascot cursor-reactive, add `follow: true` to its defaults and read th
 
 ## Files
 
-- `public/integration.md` — controller notes
+- `src/docs/` — built-in developer documentation, navigation and examples
 - `public/images/` · `public/media/` — product stills and footage
 
 See `MALLOW.md` for the `window.mallow` API.
