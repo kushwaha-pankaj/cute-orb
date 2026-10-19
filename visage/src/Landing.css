@@ -486,6 +486,13 @@
   font-weight: 650;
   font-size: 15px;
 }
+.lp-people a.lp-more {
+  display: block;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--ink);
+}
 .lp-people em {
   font-style: normal;
   font-size: 13px;

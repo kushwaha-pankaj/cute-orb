@@ -28,3 +28,5 @@ export const SHEEP_EXPRESSIONS = {
 export const SHEEP_STATES = ['idle','listening','thinking','speaking','success','error','sleeping'];
 export const SHEEP_DEFAULTS = {expression:'sassy',state:'idle',intensity:1,motion:true,autoBlink:true,speed:1,pose:'reference',gazeX:0,gazeY:0,mouthOpen:0,viseme:'auto',yaw:0,zoom:1,autoRotate:false,wool:'#e8e4d8',skin:'#e8a58b',background:'#d5c9be',exposure:1.02};
 export const FACE_BASE = {eyes:.8,smile:.1,mouth:0,lookX:0,lookY:0,tilt:0,brow:0,asymmetric:0,blush:.4,round:0,wink:0,tears:0,tongue:0,bounce:0};
+export const SHEEP_POSES = ['reference','relaxed','wave','celebrate','dance'];
+export const SHEEP_VISEMES = ['auto','rest','A','E','O','U','M','F'];

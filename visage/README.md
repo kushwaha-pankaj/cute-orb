@@ -1,6 +1,6 @@
 # Visage — soft faces for sharp systems
 
-Browser character exhibition for three interactive AI presences: a particle portrait, a green clay blob, and Mallow the wool sheep.
+Browser character studio for interactive AI presences. Today's cast: Mallow the wool sheep, the Green Blob, and a particle Portrait.
 
 ## Run
 
@@ -15,21 +15,40 @@ Production: `npm run build` then `npm run preview`.
 
 | Hash | What you get |
 |---|---|
-| `#home` | Exhibition landing |
-| `#studio/portrait` | Particle portrait / orb |
-| `#studio/blob` | Green Blob GLB studio |
-| `#studio/mallow` | Mallow sheep studio |
+| `#home` | Landing page |
+| `#studio/<id>` | Studio for any mascot in the registry (`mallow`, `blob`, `portrait`) |
 
-## Brand
+## How it fits together
 
-Direction: **one-motif** (Visage’s round presence) · palette teal on paper · Stack Sans.  
-Live thing on the landing: swap the cast on the disc; bring Mallow to life.
+- `src/mascots/index.js` — **the registry.** Name, tagline, images, tint, counts and a lazy `load()` for each mascot. The landing page, header switcher, routes and studio all read from it.
+- `src/mascots/<id>.jsx` — a mascot's **studio definition**: renderer, defaults, control panels, states, expressions, voice and API.
+- `src/studio/Studio.jsx` — the one studio that renders any definition. `controls.jsx` holds the schema-driven controls, `useVoice.js` the speech and microphone preview.
+- `src/Landing.jsx` + `Landing.css` — landing page.
+- Renderers: `SheepMascot.jsx` (Mallow), `GreenBlob.jsx`, `Presence.jsx` (Portrait), `HeroMallow.jsx` (transparent hero).
+
+## Adding a mascot
+
+1. Put a still in `public/images/` (a clean render on a flat backdrop works best).
+2. Write `src/mascots/<id>.jsx` that exports a definition. At minimum:
+
+   ```jsx
+   export default {
+     defaults: {motion: true /* …whatever your renderer reads */},
+     Renderer: ({config, onReady, onError}) => <MyRenderer config={config} onReady={onReady} onError={onError} />,
+     engine: 'three.js',
+     hint: 'Drag to orbit',
+     panels: [{id: 'look', label: 'Look', controls: [{type: 'range', key: 'scale', label: 'Scale', min: 0.5, max: 1.5}]}],
+   };
+   ```
+
+   Optional: `states`, `expressions`, `voice`, `api`, `capture`, `spinKey`, `stageAction`, `downloads`, `storageKey`. The full list is documented at the top of `src/studio/Studio.jsx`, and control types are listed at the top of `src/studio/controls.jsx`.
+3. Add an entry to `src/mascots/index.js` with `id`, `name`, `material`, `tagline`, `image`, `imageAlt`, `tint` and `load: () => import('./<id>')`.
+
+The renderer should mount into an element with the `presence` class, which fills the stage.
 
 ## Files
 
-- `src/Landing.jsx` + `Landing.css` — exhibition
-- `src/VisageStudio.jsx` · `GreenBlobStudio.jsx` · `SheepStudio.jsx` — studios
 - `public/integration.md` — controller notes
-- `public/images/` · `public/media/` — product stills and credited clay-wheel footage
+- `public/images/` · `public/media/` — product stills and footage
 
 See `MALLOW.md` for the `window.mallow` API.

@@ -1,46 +1,25 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {ArrowUpRight, AudioLines, Copy, Check, Plus, Minus} from 'lucide-react';
 import '@fontsource-variable/urbanist';
+import {mascots, featured, totalMoods} from './mascots';
 import './Landing.css';
 
-const HeroMallow = lazy(() => import('./HeroMallow'));
-const LiveMallow = lazy(() => import('./LiveMallow'));
 const asset = name => `${import.meta.env.BASE_URL}images/${name}`;
 const notes = `${import.meta.env.BASE_URL}integration.md`;
+const studioHref = m => `#studio/${m.id}`;
+const words = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+const say = n => words[n] || String(n);
 
-const cast = [
-  {
-    id: 'mallow',
-    name: 'Mallow',
-    material: 'Wool and attitude',
-    image: 'mallow-happy.png',
-    alt: 'Mallow the ivory wool sheep with arms crossed',
-    fact: '24 moods · 7 AI states · 5 poses',
-    tint: '#d4cac0',
-    href: '#studio/mallow',
-  },
-  {
-    id: 'blob',
-    name: 'Green Blob',
-    material: 'Soft clay',
-    image: 'blob.png',
-    alt: 'Green three-dimensional blob mascot with a wide grin',
-    fact: 'Eight looks · parts you can hide',
-    tint: '#9cc08f',
-    href: '#studio/blob',
-  },
-  {
-    id: 'portrait',
-    name: 'Portrait',
-    material: 'Pixel dust',
-    image: 'portrait.png',
-    alt: 'Particle portrait presence glowing blue on black',
-    fact: 'Face to orb · reacts to voice',
-    tint: '#121212',
-    dark: true,
-    href: '#studio/portrait',
-  },
-];
+// Live renderers come from the registry, one lazy component per mascot that ships one.
+const heroes = Object.fromEntries(mascots.filter(m => m.hero).map(m => [m.id, lazy(m.hero)]));
+const Hero = heroes[featured.id];
+// The headline pill and highlight tile show a second face from the cast.
+const sidekick = mascots.find(m => m.id !== featured.id && !m.dark) || featured;
+const PEOPLE_LIMIT = 3;
+
+function LiveHero({Component, onError}) {
+  return <Component onError={onError} />;
+}
 
 const visemes = [
   {key: 'A', h: 72},
@@ -52,9 +31,9 @@ const visemes = [
 ];
 
 const sessionSteps = [
-  {title: 'Choose', clause: 'Pick a face for your product.', chip: 'Mallow'},
+  {title: 'Choose', clause: 'Pick a face for your product.', chip: featured.name},
   {title: 'Shape', clause: 'Dial in gaze, mouth and pose.', chip: 'curious · 0.8'},
-  {title: 'Export', clause: 'Leave with settings as JSON.', chip: 'mallow.json'},
+  {title: 'Export', clause: 'Leave with settings as JSON.', chip: `${featured.id}.config.json`},
   {title: 'Plug in', clause: 'Your app events drive the face.', chip: "setState('speaking')"},
 ];
 
@@ -67,7 +46,7 @@ const faqs = [
   {
     question: 'What do I need to run it?',
     answer:
-      'A recent browser with WebGL and hardware acceleration. Mallow is detailed and prefers a desktop GPU. Microphone access needs HTTPS or localhost.',
+      'A recent browser with WebGL and hardware acceleration. The detailed characters prefer a desktop GPU. Microphone access needs HTTPS or localhost.',
   },
   {
     question: 'Where does microphone audio go?',
@@ -76,29 +55,25 @@ const faqs = [
   },
   {
     question: 'What can I take away?',
-    answer:
-      'Each studio exports settings as JSON. Mallow can also capture a PNG. The procedural sheep is not a rigged GLB export.',
+    answer: 'Every studio exports its settings as JSON. Some characters can also save a PNG or download their model file.',
   },
-  {
-    question: 'How do I drive Mallow?',
-    answer:
-      'Open the Mallow studio, then call window.mallow from your page or console. setState, setExpression, setGaze, setViseme and setAudioLevel cover the common cues.',
-  },
+  ...(featured.api
+    ? [
+        {
+          question: `How do I drive ${featured.name}?`,
+          answer: `Open the ${featured.name} studio, then call window.${featured.api.global} from your page or console. setState, setExpression, setGaze, setViseme and setAudioLevel cover the common cues.`,
+        },
+      ]
+    : []),
 ];
 
-const code = `mallow.setState('listening');
-mallow.setExpression('curious', 0.8);
-mallow.setGaze(0.3, 0.2);
-
-mallow.setState('speaking');
-mallow.setViseme('O');
-mallow.setAudioLevel(0.6);`;
+const code = featured.api?.example;
 
 const nav = [
   {href: '#home', label: 'Home'},
   {href: '#cast', label: 'Cast'},
   {href: '#session', label: 'Session'},
-  {href: '#cue', label: 'Code'},
+  ...(featured.api ? [{href: '#cue', label: 'Code'}] : []),
   {href: '#ask', label: 'FAQ'},
 ];
 
@@ -111,7 +86,7 @@ function canRender3D() {
 }
 
 export default function Landing({onNotice, notice}) {
-  const [live, setLive] = useState(false);
+  const [live, setLive] = useState(null);
   const [hero3D, setHero3D] = useState(canRender3D);
   const [openFaq, setOpenFaq] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -155,7 +130,7 @@ export default function Landing({onNotice, notice}) {
       <div className="lp-frame">
         <header className="lp-header">
           <a className="lp-logo" href="#home" aria-label="Visage home">
-            <img src={asset('mallow-happy.png')} alt="" width="34" height="34" />
+            <img src={asset(featured.image)} alt="" width="34" height="34" />
             Visage
           </a>
           <button
@@ -177,7 +152,7 @@ export default function Landing({onNotice, notice}) {
             <a className="lp-link" href={notes} download>
               Docs
             </a>
-            <a className="lp-ghost" href="#studio/mallow">
+            <a className="lp-ghost" href={studioHref(featured)}>
               Enter studio
             </a>
           </div>
@@ -188,8 +163,8 @@ export default function Landing({onNotice, notice}) {
             <h1 id="hero-title" className="lp-title">
               <span className="lp-line one">
                 Soft Faces
-                <a className="lp-pill" href="#studio/blob" aria-label="Open Green Blob">
-                  <img src={asset('blob.png')} alt="" width="736" height="736" />
+                <a className="lp-pill" href={studioHref(sidekick)} aria-label={`Open ${sidekick.name}`} style={{background: sidekick.tint}}>
+                  <img src={asset(sidekick.image)} alt="" width="736" height="736" />
                 </a>
               </span>
               <span className="lp-line two">
@@ -200,12 +175,12 @@ export default function Landing({onNotice, notice}) {
 
             <div className="lp-stage" aria-hidden={!hero3D}>
               <div className="lp-glow" />
-              {hero3D ? (
+              {Hero && hero3D ? (
                 <Suspense fallback={null}>
-                  <HeroMallow expression="excited" pose="wave" onError={() => setHero3D(false)} />
+                  <Hero {...featured.heroProps} onError={() => setHero3D(false)} />
                 </Suspense>
               ) : (
-                <img className="lp-stage-still" src={asset('mallow-happy.png')} alt="Mallow the sheep" />
+                <img className="lp-stage-still" src={asset(featured.image)} alt={featured.imageAlt} />
               )}
             </div>
 
@@ -214,7 +189,7 @@ export default function Landing({onNotice, notice}) {
               own events make it listen, think and speak.
             </p>
 
-            <figure className="lp-widget" aria-label="Lip sync visemes Mallow can show">
+            <figure className="lp-widget" aria-label={`Lip sync visemes ${featured.name} can show`}>
               <figcaption>Lip sync</figcaption>
               <div className="lp-bars">
                 {visemes.map((v, i) => (
@@ -226,25 +201,27 @@ export default function Landing({onNotice, notice}) {
               </div>
             </figure>
 
-            <a className="lp-cta" href="#studio/mallow">
+            <a className="lp-cta" href={studioHref(featured)}>
               Get started
             </a>
           </section>
 
           <section className="lp-row" aria-label="Highlights">
             <article className="lp-card pink" data-reveal>
-              <a className="lp-tile" href="#studio/blob" aria-label="Open Green Blob studio">
-                <img src={asset('blob.png')} alt="" width="736" height="736" loading="lazy" />
+              <a className="lp-tile" href={studioHref(sidekick)} aria-label={`Open ${sidekick.name} studio`} style={{background: sidekick.tint}}>
+                <img src={asset(sidekick.image)} alt="" width="736" height="736" loading="lazy" />
               </a>
               <div className="lp-card-body">
                 <p className="lp-score">
-                  <strong>3 faces</strong>
+                  <strong>
+                    {mascots.length} {mascots.length === 1 ? 'face' : 'faces'}
+                  </strong>
                   <span>ready to drive</span>
                 </p>
                 <ul className="lp-people">
-                  {cast.map(item => (
+                  {mascots.slice(0, PEOPLE_LIMIT).map(item => (
                     <li key={item.id}>
-                      <a href={item.href}>
+                      <a href={studioHref(item)}>
                         <img src={asset(item.image)} alt="" width="44" height="44" loading="lazy" style={{background: item.tint}} />
                         <span>
                           <b>{item.name}</b>
@@ -254,6 +231,13 @@ export default function Landing({onNotice, notice}) {
                       </a>
                     </li>
                   ))}
+                  {mascots.length > PEOPLE_LIMIT && (
+                    <li>
+                      <a className="lp-more" href="#cast">
+                        +{mascots.length - PEOPLE_LIMIT} more in the cast
+                      </a>
+                    </li>
+                  )}
                 </ul>
               </div>
             </article>
@@ -262,8 +246,8 @@ export default function Landing({onNotice, notice}) {
               <span className="lp-icon" aria-hidden="true">
                 <AudioLines size={22} />
               </span>
-              <p>Moods you can call from code</p>
-              <strong className="lp-big">24</strong>
+              <p>Moods &amp; states across the cast</p>
+              <strong className="lp-big">{totalMoods}</strong>
               <a className="lp-ghost small" href={notes} download>
                 Read the notes <ArrowUpRight size={15} />
               </a>
@@ -275,10 +259,10 @@ export default function Landing({onNotice, notice}) {
       <section className="lp-section" id="cast" aria-labelledby="cast-title">
         <div className="lp-head" data-reveal>
           <p className="lp-kicker">The cast</p>
-          <h2 id="cast-title">Three faces, one controller</h2>
+          <h2 id="cast-title">{say(mascots.length)} faces, one studio</h2>
         </div>
         <div className="lp-cast">
-          {cast.map((item, index) => (
+          {mascots.map((item, index) => (
             <article
               key={item.id}
               className={`lp-cast-card ${item.dark ? 'dark' : ''}`}
@@ -286,19 +270,18 @@ export default function Landing({onNotice, notice}) {
               data-reveal
             >
               <div className="lp-cast-art">
-                {live && item.id === 'mallow' ? (
-                  <Suspense fallback={<p className="lp-wait">Warming wool…</p>}>
-                    <LiveMallow
-                      expression="joyful"
-                      background={item.tint}
+                {live === item.id && heroes[item.id] ? (
+                  <Suspense fallback={<p className="lp-wait">Warming up…</p>}>
+                    <LiveHero
+                      Component={heroes[item.id]}
                       onError={message => {
                         onNotice(message);
-                        setLive(false);
+                        setLive(null);
                       }}
                     />
                   </Suspense>
                 ) : (
-                  <img src={asset(item.image)} alt={item.alt} width="655" height="880" loading="lazy" />
+                  <img src={asset(item.image)} alt={item.imageAlt} width="655" height="880" loading="lazy" />
                 )}
               </div>
               <div className="lp-cast-info">
@@ -308,12 +291,12 @@ export default function Landing({onNotice, notice}) {
                 </div>
                 <small>{item.fact}</small>
                 <div className="lp-cast-actions">
-                  <a className="lp-cta small" href={item.href}>
+                  <a className="lp-cta small" href={studioHref(item)}>
                     Open studio <ArrowUpRight size={16} />
                   </a>
-                  {item.id === 'mallow' && (
-                    <button type="button" className="lp-link" onClick={() => setLive(v => !v)}>
-                      {live ? 'Still frame' : 'Bring to life'}
+                  {heroes[item.id] && (
+                    <button type="button" className="lp-link" onClick={() => setLive(v => (v === item.id ? null : item.id))}>
+                      {live === item.id ? 'Still frame' : 'Bring to life'}
                     </button>
                   )}
                 </div>
@@ -340,6 +323,7 @@ export default function Landing({onNotice, notice}) {
         </ol>
       </section>
 
+      {code && (
       <section className="lp-section lp-cue" id="cue" aria-labelledby="cue-title">
         <div className="lp-code" data-reveal>
           <div className="lp-code-bar">
@@ -348,7 +332,7 @@ export default function Landing({onNotice, notice}) {
               <i />
               <i />
             </span>
-            <span>mallow.js</span>
+            <span>{featured.api?.global}.js</span>
             <button type="button" onClick={copyCode} aria-label="Copy code">
               {copied ? <Check size={16} /> : <Copy size={16} />}
               {copied ? 'Copied' : 'Copy'}
@@ -359,12 +343,19 @@ export default function Landing({onNotice, notice}) {
           </pre>
         </div>
         <div className="lp-cue-card" data-reveal>
-          <img src={asset('mallow-sassy.png')} alt="Mallow giving a sideways, knowing look" width="630" height="700" loading="lazy" />
+          <img
+            src={asset(featured.secondaryImage || featured.image)}
+            alt={featured.secondaryAlt || featured.imageAlt}
+            width="630"
+            height="700"
+            loading="lazy"
+            style={{background: featured.tint}}
+          />
           <div>
             <p className="lp-kicker">The cue</p>
-            <h2 id="cue-title">You bring the events. Mallow brings the face.</h2>
+            <h2 id="cue-title">You bring the events. {featured.name} brings the face.</h2>
             <div className="lp-cast-actions">
-              <a className="lp-cta small" href="#studio/mallow">
+              <a className="lp-cta small" href={studioHref(featured)}>
                 Try it in studio <ArrowUpRight size={16} />
               </a>
               <a className="lp-link" href={notes} download>
@@ -374,6 +365,7 @@ export default function Landing({onNotice, notice}) {
           </div>
         </div>
       </section>
+      )}
 
       <section className="lp-section lp-faq" id="ask" aria-labelledby="faq-title">
         <div className="lp-head" data-reveal>
@@ -402,25 +394,27 @@ export default function Landing({onNotice, notice}) {
           <div>
             <h2>Meet your presence</h2>
             <p>Open a studio and make it move in under a minute.</p>
-            <a className="lp-cta" href="#studio/mallow">
+            <a className="lp-cta" href={studioHref(featured)}>
               Get started
             </a>
           </div>
           <div className="lp-band-faces" aria-hidden="true">
-            {cast.map(item => (
+            {mascots.slice(0, 4).map(item => (
               <img key={item.id} src={asset(item.image)} alt="" style={{background: item.tint}} loading="lazy" />
             ))}
           </div>
         </div>
         <div className="lp-foot">
           <a className="lp-logo" href="#home">
-            <img src={asset('mallow-happy.png')} alt="" width="34" height="34" />
+            <img src={asset(featured.image)} alt="" width="34" height="34" />
             Visage
           </a>
           <nav aria-label="Footer">
-            <a href="#studio/portrait">Portrait</a>
-            <a href="#studio/blob">Green Blob</a>
-            <a href="#studio/mallow">Mallow</a>
+            {mascots.map(m => (
+              <a key={m.id} href={studioHref(m)}>
+                {m.name}
+              </a>
+            ))}
             <a href={notes} download>
               Integration notes
             </a>
