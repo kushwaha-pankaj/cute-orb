@@ -17,6 +17,18 @@ Production: `npm run build` then `npm run preview`.
 |---|---|
 | `#home` | Landing page |
 | `#studio/<id>` | Studio for any mascot in the registry (`mallow`, `blob`, `portrait`) |
+| `#studio/<id>?c=…` | Studio opened with shared settings (from Use on your site → Settings) |
+| `#embed/<id>?c=…&bg=transparent` | Chromeless mascot used by `public/visage.js` on other websites |
+
+## Put a mascot on another website
+
+```html
+<div data-visage="mallow" style="width: 320px; height: 400px"></div>
+<script src="https://YOUR-VISAGE-HOST/visage.js"></script>
+<script>Visage.get('mallow').setState('thinking');</script>
+```
+
+The studio's **Use on your site** button generates this (plus React and an AI-agent prompt) with your settings baked in. The full guide is in [`public/integration.md`](public/integration.md), also served at `/integration.md`. Snippets point at wherever Visage is hosted, so deploy `dist/` to a static HTTPS host first.
 
 ## How it fits together
 
@@ -24,6 +36,8 @@ Production: `npm run build` then `npm run preview`.
 - `src/mascots/<id>.jsx` — a mascot's **studio definition**: renderer, defaults, control panels, states, expressions, voice and API.
 - `src/studio/Studio.jsx` — the one studio that renders any definition. `controls.jsx` holds the schema-driven controls, `useVoice.js` the speech and microphone preview.
 - `src/Landing.jsx` + `Landing.css` — landing page.
+- `src/integration.js` — settings codes, share links and every snippet/prompt (one source for studio, landing and docs).
+- `src/embed/EmbedPage.jsx` + `public/visage.js` — the embed route and the loader other websites include.
 - Renderers: `SheepMascot.jsx` (Mallow), `GreenBlob.jsx`, `Presence.jsx` (Portrait), `HeroMallow.jsx` (transparent hero).
 
 ## Adding a mascot

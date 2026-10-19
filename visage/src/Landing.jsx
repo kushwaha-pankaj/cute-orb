@@ -1,7 +1,8 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
-import {ArrowUpRight, AudioLines, Copy, Check, Plus, Minus} from 'lucide-react';
+import {ArrowUpRight, AudioLines, Bot, Copy, Check, Code2, Globe, Plus, Minus, Plug, TriangleAlert} from 'lucide-react';
 import '@fontsource-variable/urbanist';
 import {mascots, featured, totalMoods} from './mascots';
+import {agentPrompt, hostUrl, htmlSnippet, isLocalHost, jsSnippet, reactSnippet} from './integration';
 import './Landing.css';
 
 const asset = name => `${import.meta.env.BASE_URL}images/${name}`;
@@ -33,7 +34,7 @@ const visemes = [
 const sessionSteps = [
   {title: 'Choose', clause: 'Pick a face for your product.', chip: featured.name},
   {title: 'Shape', clause: 'Dial in gaze, mouth and pose.', chip: 'curious · 0.8'},
-  {title: 'Export', clause: 'Leave with settings as JSON.', chip: `${featured.id}.config.json`},
+  {title: 'Copy', clause: 'Grab a snippet with your settings in it.', chip: 'Use on your site'},
   {title: 'Plug in', clause: 'Your app events drive the face.', chip: "setState('speaking')"},
 ];
 
@@ -54,26 +55,27 @@ const faqs = [
       'Levels are measured in your browser to animate the mouth. This app does not record or upload microphone audio. Browser speech may use your browser’s voice service.',
   },
   {
-    question: 'What can I take away?',
-    answer: 'Every studio exports its settings as JSON. Some characters can also save a PNG or download their model file.',
+    question: 'How do I add a mascot to my site?',
+    answer:
+      'Open a studio, press “Use on your site” and paste the snippet: one div and one script tag. The mascot runs in its own frame, so it can’t clash with your CSS or JavaScript. There’s a React component too.',
   },
-  ...(featured.api
-    ? [
-        {
-          question: `How do I drive ${featured.name}?`,
-          answer: `Open the ${featured.name} studio, then call window.${featured.api.global} from your page or console. setState, setExpression, setGaze, setViseme and setAudioLevel cover the common cues.`,
-        },
-      ]
-    : []),
+  {
+    question: 'Can my AI coding agent set it up for me?',
+    answer:
+      'Yes. The studio’s “AI agent” tab gives you a prompt for Claude Code, Cursor or any coding agent. It says where to embed the mascot and how to wire it to your assistant’s listening, thinking and speaking moments.',
+  },
+  {
+    question: 'How does it react to my assistant?',
+    answer:
+      'Call setState with listening, thinking, speaking or idle from your chat code, and setAudioLevel (0 to 1) from your text-to-speech audio. Each mascot reports its own states, expressions and settings when it’s ready.',
+  },
 ];
-
-const code = featured.api?.example;
 
 const nav = [
   {href: '#home', label: 'Home'},
   {href: '#cast', label: 'Cast'},
   {href: '#session', label: 'Session'},
-  ...(featured.api ? [{href: '#cue', label: 'Code'}] : []),
+  {href: '#developers', label: 'Developers'},
   {href: '#ask', label: 'FAQ'},
 ];
 
@@ -90,6 +92,7 @@ export default function Landing({onNotice, notice}) {
   const [hero3D, setHero3D] = useState(canRender3D);
   const [openFaq, setOpenFaq] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [devTab, setDevTab] = useState('html');
   const [menu, setMenu] = useState(false);
   const root = useRef(null);
 
@@ -111,15 +114,22 @@ export default function Landing({onNotice, notice}) {
     return () => observer.disconnect();
   }, []);
 
-  async function copyCode() {
+  async function copy(text, key) {
     try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
       setTimeout(() => setCopied(false), 2200);
     } catch {
-      onNotice('Select the code and copy it with your keyboard.');
+      onNotice('Select the text and copy it with your keyboard.');
     }
   }
+
+  const devCode = {
+    html: htmlSnippet(featured),
+    js: jsSnippet(featured),
+    react: reactSnippet(featured),
+    agent: agentPrompt(featured),
+  };
 
   return (
     <div className="lp" ref={root}>
@@ -323,49 +333,85 @@ export default function Landing({onNotice, notice}) {
         </ol>
       </section>
 
-      {code && (
-      <section className="lp-section lp-cue" id="cue" aria-labelledby="cue-title">
-        <div className="lp-code" data-reveal>
-          <div className="lp-code-bar">
-            <span className="lp-dots" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-            <span>{featured.api?.global}.js</span>
-            <button type="button" onClick={copyCode} aria-label="Copy code">
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-          </div>
-          <pre>
-            <code>{code}</code>
-          </pre>
+      <section className="lp-section lp-dev" id="developers" aria-labelledby="dev-title">
+        <div className="lp-head" data-reveal>
+          <p className="lp-kicker">For developers</p>
+          <h2 id="dev-title">Put a face on your product in three steps</h2>
+          <p className="lp-sub">One script tag, no build step, no account. Or hand it to your AI coding agent.</p>
         </div>
-        <div className="lp-cue-card" data-reveal>
-          <img
-            src={asset(featured.secondaryImage || featured.image)}
-            alt={featured.secondaryAlt || featured.imageAlt}
-            width="630"
-            height="700"
-            loading="lazy"
-            style={{background: featured.tint}}
-          />
-          <div>
-            <p className="lp-kicker">The cue</p>
-            <h2 id="cue-title">You bring the events. {featured.name} brings the face.</h2>
-            <div className="lp-cast-actions">
-              <a className="lp-cta small" href={studioHref(featured)}>
-                Try it in studio <ArrowUpRight size={16} />
-              </a>
-              <a className="lp-link" href={notes} download>
-                Integration notes
-              </a>
+        <div className="lp-dev-grid">
+          <ol className="lp-dev-steps">
+            <li className="lp-dev-step" data-reveal>
+              <span className="lp-dev-n">1</span>
+              <div>
+                <h3>Customise</h3>
+                <p>Open a studio, pick a mascot and tune its look, mood and motion. Your changes save as you go.</p>
+                <a className="lp-link" href={studioHref(featured)}>
+                  Open the studio <ArrowUpRight size={15} />
+                </a>
+              </div>
+            </li>
+            <li className="lp-dev-step" data-reveal style={{'--delay': '70ms'}}>
+              <span className="lp-dev-n">2</span>
+              <div>
+                <h3>Copy the snippet</h3>
+                <p>
+                  Press <b><Plug size={13} /> Use on your site</b> for an HTML or React snippet with your settings baked in. Paste it
+                  where the mascot should live.
+                </p>
+              </div>
+            </li>
+            <li className="lp-dev-step" data-reveal style={{'--delay': '140ms'}}>
+              <span className="lp-dev-n">3</span>
+              <div>
+                <h3>Wire it to your assistant</h3>
+                <p>
+                  Call <code>setState</code> as your assistant listens, thinks and speaks. Or paste the AI-agent prompt and let your
+                  coding agent do the wiring.
+                </p>
+                <button type="button" className="lp-link" onClick={() => copy(agentPrompt(featured), 'agent-quick')}>
+                  {copied === 'agent-quick' ? 'Prompt copied' : 'Copy the AI-agent prompt'} <Bot size={15} />
+                </button>
+              </div>
+            </li>
+          </ol>
+
+          <div className="lp-code" data-reveal>
+            <div className="lp-code-bar">
+              <div className="lp-code-tabs" role="tablist" aria-label="Integration code">
+                {[
+                  {id: 'html', label: 'HTML', icon: Globe},
+                  {id: 'js', label: 'JavaScript', icon: Code2},
+                  {id: 'react', label: 'React', icon: Code2},
+                  {id: 'agent', label: 'AI agent', icon: Bot},
+                ].map(t => (
+                  <button key={t.id} type="button" role="tab" aria-selected={devTab === t.id} onClick={() => setDevTab(t.id)}>
+                    <t.icon size={13} /> {t.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="lp-code-copy"
+                onClick={() => copy(devCode[devTab], devTab)}
+                aria-label="Copy code"
+              >
+                {copied === devTab ? <Check size={15} /> : <Copy size={15} />}
+                {copied === devTab ? 'Copied' : 'Copy'}
+              </button>
             </div>
+            <pre role="tabpanel">
+              <code>{devCode[devTab]}</code>
+            </pre>
+            <p className="lp-code-note">
+              {isLocalHost() ? <TriangleAlert size={14} /> : <Globe size={14} />}
+              {isLocalHost()
+                ? `Served from ${hostUrl()}: deploy Visage to get snippets that work on a live site.`
+                : `Served from ${hostUrl()}`}
+            </p>
           </div>
         </div>
       </section>
-      )}
 
       <section className="lp-section lp-faq" id="ask" aria-labelledby="faq-title">
         <div className="lp-head" data-reveal>

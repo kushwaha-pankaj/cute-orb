@@ -1,5 +1,6 @@
-import {Component, useEffect, useState} from 'react';
+import {Component, useEffect, useMemo, useState} from 'react';
 import Studio, {StudioTopBar} from './Studio';
+import {decodeConfig} from '../integration';
 import '@fontsource-variable/urbanist';
 import './Studio.css';
 
@@ -34,7 +35,9 @@ function readTheme() {
   }
 }
 
-export default function StudioPage({meta, notice, onNotice}) {
+export default function StudioPage({meta, query, notice, onNotice}) {
+  // A share link (#studio/<id>?c=…) opens with those settings applied once.
+  const overrides = useMemo(() => decodeConfig(query?.get('c')), [query]);
   const [theme, setTheme] = useState(readTheme);
   const [loaded, setLoaded] = useState({id: null, def: null, error: false});
 
@@ -75,7 +78,7 @@ export default function StudioPage({meta, notice, onNotice}) {
       <main id="studio-content" tabIndex={-1}>
         {def ? (
           <StudioBoundary key={meta.id}>
-            <Studio key={meta.id} meta={meta} def={def} theme={theme} setTheme={setTheme} onNotice={onNotice} />
+            <Studio key={meta.id} meta={meta} def={def} theme={theme} setTheme={setTheme} onNotice={onNotice} overrides={overrides} />
           </StudioBoundary>
         ) : (
           <div className="st-room is-loading" style={{'--surface': meta.tint}}>

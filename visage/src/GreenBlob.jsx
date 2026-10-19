@@ -454,9 +454,10 @@ export default function GreenBlob({config, onError, onReady, pointer}) {
       const c = live.current.config;
       const motion = c.motion ? 1 : 0;
 
-      scene.background = new THREE.Color(c.studio);
+      // Embeds can ask for a transparent stage so the blob sits on the host page.
+      scene.background = c.transparent ? null : new THREE.Color(c.studio);
       floor.material.color.set(c.floor);
-      floor.visible = c.showFloor;
+      floor.visible = c.showFloor && !c.transparent;
       hemi.intensity = c.ambient;
       key.intensity = c.keyLight * 0.9;
       fill.intensity = c.fillLight;

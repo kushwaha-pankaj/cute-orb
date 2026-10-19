@@ -18,6 +18,7 @@ Every rule here exists because something broke. The **Why** lines say what happe
 11. [Pre-merge checklist](#11-pre-merge-checklist)
 12. [Mistakes log](#12-mistakes-log)
 13. [Starter template](#13-starter-template)
+14. [Works on anyone's website (embed)](#14-works-on-anyones-website-embed)
 
 ---
 
@@ -68,7 +69,9 @@ Used for the landing cards, avatars, the header switcher and the loading screen.
 
 **R2.5 Write a real `imageAlt`** that describes the character and pose, not "mascot image".
 
-**R2.6 Optional extras:** `secondaryImage` (a second pose, used for the landing "cue" card) and `hero` (a transparent live renderer for the landing hero; see `HeroMallow.jsx`).
+**R2.6 Optional extra:** `hero`, a transparent live renderer for the landing hero and the cast card's "Bring to life" (see `HeroMallow.jsx`).
+
+**R2.7 List the ids in the registry.** Add `states` and `expressions` id arrays to the registry entry, derived from the data files. The landing page builds snippets and the AI-agent prompt from them without loading any 3D code.
 
 ---
 
@@ -286,6 +289,12 @@ Run `npm run dev`, open `#studio/<id>`, and tick every box.
 - [ ] Every slider is fine at both ends; every toggle and choice does something visible.
 - [ ] Reset restores the defaults; reload keeps settings but not the state.
 
+**Embed (§14)**
+- [ ] A test page on another origin mounts it with `<div data-visage="<id>">` and `visage.js`, and `ready` lists the right states, expressions and settings.
+- [ ] It's framed well at 320×400, with and without `data-background="transparent"`.
+- [ ] `setState`, `setExpression`, `set` and `reset` work; bad names come back as `error` events.
+- [ ] Studio → Use on your site: every tab's snippet works when pasted as-is.
+
 **Build**
 - [ ] `npm run build` passes.
 
@@ -313,6 +322,8 @@ Run `npm run dev`, open `#studio/<id>`, and tick every box.
 | Brow tilt sign inverted | Mallow | R6.3 |
 | Mouth overlays buried inside the body | Green Blob | R6.5 |
 | "O" mouth torus faced up, read as a bar | Green Blob | R6.6 |
+| Landing showed `window.mallow` as the integration, but it only exists inside our studio | Mallow | R14.1 |
+| Embed snippet used `defer`, so `Visage.get()` in a later inline script failed | All | R14.5 |
 
 Add a row whenever something new breaks.
 
@@ -364,6 +375,8 @@ export default {
   image: '<id>.png',
   imageAlt: 'What the character looks like and is doing',
   tint: '#hex-of-the-still-backdrop',
+  states: MY_STATES,
+  expressions: Object.keys(MY_EXPRESSIONS),
   moods: Object.keys(MY_EXPRESSIONS).length,
   fact: `${count(Object.keys(MY_EXPRESSIONS).length, 'mood')} · ${count(MY_STATES.length, 'state')}`,
   load: () => import('./<id>'),
@@ -414,4 +427,25 @@ export default function MyMascot({config, pointer, onReady, onError, controlRef}
   return <div className="presence" ref={host} />;
 }
 ```
+
+---
+
+## 14. Works on anyone's website (embed)
+
+Every mascot must also run on other people's sites through `public/visage.js`. It loads `#embed/<id>` in an iframe and drives it with `postMessage` (see `src/embed/EmbedPage.jsx` and `public/integration.md`).
+
+**R14.1 Integration examples must work outside our studio.** Anything shown to developers (landing, docs, prompts) uses the `Visage` API from `visage.js`, never a studio-only global.
+*Why:* the landing page's code section showed `window.mallow.setState(…)`, which only exists while our own studio is open.
+
+**R14.2 Support a transparent background.** When `config.transparent` is true, the renderer draws no backdrop or floor, only the character (and at most a soft shadow). Mallow and Green Blob both support it.
+
+**R14.3 Frame for small portrait frames.** The default embed is 320×400. Check the character there too, not only in the full-screen studio room.
+
+**R14.4 Generic API first.** `setState`, `setExpression`, `set`, `setAudioLevel` and `reset` must work from the definition alone (states, expressions, defaults). Extra controller methods go in `def.api` and are reached with `mascot.call(name, …args)`.
+
+**R14.5 Snippets are copy-paste correct.** Load `visage.js` without `defer` so later inline scripts can use `Visage`. Never hand-write snippet strings in pages: generate them with `src/integration.js`, so studio, landing, docs and the AI prompt never drift apart.
+
+**R14.6 Treat everything from the host page as untrusted.** Embed messages are accepted only from `window.parent`. Settings pass through `sanitize()` (known keys, matching types), and unknown names return an error rather than throwing on the host page.
+
+**R14.7 Never put user data in settings codes.** `data-config` and share links are plain base64 JSON of visual settings, visible to anyone who views source.
 

@@ -106,3 +106,15 @@ a {
     scroll-behavior: auto;
   }
 }
+
+/* Embed route (#embed/<id>): one mascot filling its iframe. */
+.embed-stage {
+  position: fixed;
+  inset: 0;
+}
+.embed-error {
+  margin: 0;
+  padding: 16px;
+  font: 14px system-ui, sans-serif;
+  color: #5f5b57;
+}

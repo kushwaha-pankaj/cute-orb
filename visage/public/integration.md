@@ -1,54 +1,101 @@
-# Visage integration notes
+# Visage integration guide
 
-Visage is a browser character studio. There is no AI backend and no account. Drive a presence from your own app events.
+Put a Visage mascot on any website and drive it from your AI assistant. There's no account, no API key and no build step: one div and one script tag.
 
-## Routes
+The quickest path is the studio. Open `#studio/<mascot>`, customise it, press **Use on your site** and copy the HTML, React or AI-agent tab. Everything below is what those snippets do.
 
-- `#home` — exhibition landing
-- `#studio/portrait` — particle portrait / orb
-- `#studio/blob` — Green Blob GLB mascot
-- `#studio/mallow` — Mallow procedural sheep
+## 1. Embed
 
-## Mallow controller
-
-While Experiment 003 (Mallow) is open, the playground exposes `window.mallow`:
-
-```js
-mallow.setState('listening');
-mallow.setExpression('curious', 0.8);
-mallow.setGaze(0.2, 0.4);   // each axis -1…1
-mallow.setPose('wave');
-mallow.setMouth(0.5);      // 0…1
-mallow.setAudioLevel(0.6); // normalized amplitude 0…1
-mallow.setViseme('O');     // auto, rest, A, E, O, U, M, F
-const configuration = mallow.getConfig();
-mallow.reset();
+```html
+<div data-visage="mallow" style="width: 320px; height: 400px"></div>
+<script src="https://YOUR-VISAGE-HOST/visage.js"></script>
 ```
 
-States: `idle`, `listening`, `thinking`, `speaking`, `success`, `error`, `sleeping`.
+- `data-visage`: the mascot id (`mallow`, `blob`, `portrait`, …).
+- `data-config`: optional settings code from the studio (Use on your site → Settings). It bakes in your customisation.
+- `data-background="transparent"`: optional; blends the mascot into your page instead of its studio backdrop.
+- `data-follow-page="false"`: optional; only follow the cursor while it's over the mascot. By default the mascot looks at the cursor anywhere on the page.
+- `data-title`: optional accessible name for the frame.
 
-Poses: `reference`, `relaxed`, `wave`, `celebrate`, `dance`.
+Size the div with CSS; the mascot fills it. Each mascot renders in its own iframe, so it can't clash with your CSS or scripts. Load the script **without `defer`** (or wait for it to load) before calling `Visage` from your own scripts.
 
-Expressions: `sassy`, `neutral`, `happy`, `joyful`, `loving`, `curious`, `surprised`, `confused`, `concerned`, `sad`, `crying`, `angry`, `frustrated`, `skeptical`, `embarrassed`, `proud`, `sleepy`, `sleeping`, `wink`, `playful`, `laughing`, `relieved`, `excited`, `bored`.
-
-## Speech
-
-Browser speech preview is approximate, not phoneme-aligned. Microphone audio is analysed locally and never uploaded. For precise sync, schedule `setViseme()` against your speech provider timestamps, then return to `auto`.
+## 2. Drive it
 
 ```js
-mallow.setState('speaking');
-mallow.setViseme('A');
-// At playback completion:
-mallow.setViseme('auto');
-mallow.setAudioLevel(0);
-mallow.setMouth(0);
-mallow.setState('idle');
+const mascot = Visage.get('mallow');   // or Visage.get(element)
+
+mascot.setState('listening');   // user is typing or talking
+mascot.setState('thinking');    // waiting for the model
+mascot.setState('speaking');    // reply streaming or being read aloud
+mascot.setAudioLevel(0.6);      // 0..1 every frame from your TTS audio (AnalyserNode)
+mascot.setState('idle');        // done
+
+mascot.setExpression('happy');  // any expression the mascot has
+mascot.set({follow: false});    // change any setting live
+mascot.reset();                 // back to the embed's starting settings
+mascot.on('ready', info => console.log(info));
+mascot.on('error', message => console.warn(message));
+mascot.destroy();
 ```
 
-## React embedding
+Calls made before the mascot has loaded are queued. Unknown states, expressions or methods don't throw on your page; they emit `error` with the list of valid names.
 
-Import the mascot components from `src/` and pass config props. Each studio can export its current settings as JSON from the UI. Mallow can also capture a PNG. There is no GLB export for the procedural sheep.
+`info` (from `ready`) looks like this:
 
-## Requirements
+```json
+{
+  "mascot": "mallow",
+  "name": "Mallow",
+  "states": ["idle", "listening", "thinking", "speaking", "success", "error", "sleeping"],
+  "expressions": ["sassy", "neutral", "happy", "…"],
+  "settings": ["expression", "intensity", "pose", "…"],
+  "methods": ["setGaze", "setViseme", "setPose", "…"]
+}
+```
 
-Recent browser with WebGL and hardware acceleration. Microphone needs HTTPS or localhost. The detailed Mallow model targets desktop GPUs.
+Mascot-specific extras listed in `methods` are reached with `call`:
+
+```js
+mascot.call('setPose', 'wave');
+mascot.call('setViseme', 'O');    // auto, rest, A, E, O, U, M, F
+mascot.call('setGaze', 0.3, 0.2); // -1..1 each
+```
+
+Mascots without AI states (for example the Green Blob) still take expressions and settings.
+
+## 3. Mount from code (React, Vue, …)
+
+```js
+const mascot = Visage.mount(element, {
+  mascot: 'mallow',
+  config: 'eyJ…',              // optional settings code
+  background: 'transparent',   // optional
+  followPage: true,            // optional
+});
+// later: mascot.destroy();
+```
+
+The studio's React tab has a ready-made `<VisageMascot state="thinking" />` component.
+
+## 4. Let your AI coding agent do it
+
+Open the studio, press **Use on your site → AI agent** and paste the prompt into Claude Code, Cursor or any coding agent working in your project. It contains the snippet, the mascot's real states and expressions, and how to map your assistant's lifecycle to them.
+
+## Under the hood
+
+`visage.js` creates `<iframe src="https://YOUR-VISAGE-HOST/#embed/<id>?c=<settings>&bg=transparent">` and talks to it with `postMessage`:
+
+- page → mascot: `{visage: 1, id, method, args}`, where `method` is one of `setState`, `setExpression`, `set`, `setAudioLevel`, `reset`, `pointer`, `call`
+- mascot → page: `{visage: 1, event: 'ready', info}` once, then `{visage: 1, event: 'result', id, ok, error}`
+
+Messages are checked against the frame's origin, and settings are filtered to the mascot's known keys and types.
+
+## Hosting
+
+Snippets point at wherever Visage is served. Build it with `npm run build` and serve `dist/` from any static host over HTTPS; routing is hash-based, so no server rules are needed. If your site sets a Content-Security-Policy, allow the Visage origin in `script-src` and `frame-src`.
+
+## Privacy and requirements
+
+There's no tracking and no backend. Audio levels you send stay in the browser. The studio's microphone preview is analysed locally and never uploaded.
+
+It needs a recent browser with WebGL and hardware acceleration. The detailed characters prefer desktop GPUs, and reduced-motion preferences are respected.

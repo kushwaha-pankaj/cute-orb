@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Camera,
   Check,
@@ -12,6 +12,7 @@ import {
   MousePointer2,
   Orbit,
   Pause,
+  Plug,
   Play,
   Rotate3d,
   RotateCcw,
@@ -22,6 +23,8 @@ import {
 import {mascots} from '../mascots';
 import {ControlList} from './controls';
 import useVoice from './useVoice';
+import useMascotConfig from './useMascotConfig';
+import IntegratePanel from './IntegratePanel';
 
 /**
  * One studio for every mascot: the character fills the room and the controls float over it.
@@ -44,30 +47,6 @@ import useVoice from './useVoice';
 
 const asset = name => `${import.meta.env.BASE_URL}images/${name}`;
 const notes = `${import.meta.env.BASE_URL}integration.md`;
-const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-function loadConfig(def) {
-  let saved = {};
-  if (def.storageKey) {
-    try {
-      saved = JSON.parse(localStorage.getItem(def.storageKey) || '{}') || {};
-    } catch {
-      saved = {};
-    }
-  }
-  for (const key of def.transient || []) delete saved[key];
-  if (def.migrate && Object.keys(saved).length) saved = def.migrate(saved);
-  const config = {...def.defaults, ...saved};
-  if ('motion' in def.defaults && !('motion' in saved) && reducedMotion()) config.motion = false;
-  return config;
-}
-
-function freshConfig(def) {
-  const config = {...def.defaults};
-  if ('motion' in config && reducedMotion()) config.motion = false;
-  return config;
-}
-
 function download(href, name) {
   const a = document.createElement('a');
   a.href = href;
@@ -115,8 +94,9 @@ export function StudioTopBar({meta, theme, setTheme, children}) {
   );
 }
 
-export default function Studio({meta, def, theme, setTheme, onNotice}) {
-  const [config, setConfig] = useState(() => loadConfig(def));
+export default function Studio({meta, def, theme, setTheme, onNotice, overrides}) {
+  const mascot = useMascotConfig(def, {overrides});
+  const {config, setConfig, configRef, patch, setStateValue, applyExpression, stateKey, exprKey} = mascot;
   const [tab, setTab] = useState(def.panels[0]?.id);
   const [tour, setTour] = useState(null);
   const [clean, setClean] = useState(false);
@@ -124,43 +104,26 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
   const [externalLevel, setExternalLevel] = useState(null);
   const [line, setLine] = useState(def.voice?.line || '');
   const [copied, setCopied] = useState(false);
+  const [integrate, setIntegrate] = useState(false);
   const controlRef = useRef(null);
   const canvasRef = useRef(null);
   const pointerRef = useRef({x: 0, y: 0});
-  const configRef = useRef(config);
-  configRef.current = config;
 
-  const stateKey = def.states?.key;
-  const exprKey = def.expressions?.key;
-  const stateIds = useMemo(() => new Set(def.states?.options.map(o => o.id)), [def]);
-
-  const patch = useCallback(
-    (key, value) => setConfig(c => (def.update ? def.update(c, key, value) : {...c, [key]: value})),
-    [def],
-  );
-  const setStateValue = useCallback(s => stateKey && stateIds.has(s) && patch(stateKey, s), [patch, stateKey, stateIds]);
-  const applyExpression = useCallback(
-    id => setConfig(c => (def.expressions.apply ? def.expressions.apply(c, id) : {...c, [exprKey]: id})),
-    [def, exprKey],
-  );
+  const resetConfig = mascot.reset;
   const reset = useCallback(() => {
-    setConfig(freshConfig(def));
+    resetConfig();
     setExternalLevel(null);
     controlRef.current?.resetCamera?.();
-  }, [def]);
+  }, [resetConfig]);
 
   const voice = useVoice({onState: setStateValue, onNotice});
 
+  // A share link's settings are applied once; tidy the address bar so a reload keeps later edits.
   useEffect(() => {
-    if (!def.storageKey) return;
-    const saved = {...config};
-    for (const key of def.transient || []) delete saved[key];
-    try {
-      localStorage.setItem(def.storageKey, JSON.stringify(saved));
-    } catch {
-      /* storage can be unavailable; settings still work for this visit */
-    }
-  }, [config, def]);
+    if (!overrides) return;
+    history.replaceState(null, '', `#studio/${meta.id}`);
+    onNotice('Shared settings loaded.');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shared cursor for every renderer: -1..1 around the stage, centred a little above the
   // middle where faces sit. It eases back to centre when the cursor leaves the window.
@@ -280,8 +243,8 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
               <Camera size={17} />
             </IconButton>
           )}
-          <button type="button" className="st-cta small" onClick={exportConfig}>
-            <Download size={16} /> <span className="st-hide-sm">Export</span>
+          <button type="button" className="st-cta small" onClick={() => setIntegrate(true)}>
+            <Plug size={16} /> <span className="st-hide-sm">Use on your site</span>
           </button>
         </StudioTopBar>
 
@@ -479,6 +442,10 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
           </div>
         </div>
       </div>
+
+      {integrate && (
+        <IntegratePanel meta={meta} def={def} config={config} onClose={() => setIntegrate(false)} onExport={exportConfig} onNotice={onNotice} />
+      )}
 
       {clean && (
         <button type="button" className="st-show st-glass" onClick={() => setClean(false)}>

@@ -11,3 +11,4 @@ Key rules, in short:
 - Renderers mount into a `.presence` div, read config from a ref every frame, resize with a ResizeObserver, and dispose everything on unmount.
 - Frame characters with camera zoom, not model scale. Keep the top of the stage empty.
 - Verify every expression visually at thumbnail size. Opposite moods must look opposite.
+- Every mascot must also work on other websites through `public/visage.js` and the `#embed/<id>` route (rule book §14). Generate snippets and prompts with `src/integration.js`; never hand-write them.

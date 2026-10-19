@@ -20,6 +20,8 @@ export const mascots = [
     image: 'mallow-happy.png',
     imageAlt: 'Mallow the ivory wool sheep with arms crossed',
     tint: '#d4cac0',
+    states: SHEEP_STATES,
+    expressions: Object.keys(SHEEP_EXPRESSIONS),
     moods: Object.keys(SHEEP_EXPRESSIONS).length,
     fact: [
       count(Object.keys(SHEEP_EXPRESSIONS).length, 'mood'),
@@ -29,8 +31,7 @@ export const mascots = [
     // Optional: a transparent, cursor-aware renderer for the landing hero and cast card.
     hero: () => import('../HeroMallow'),
     heroProps: {expression: 'excited', pose: 'wave'},
-    secondaryImage: 'mallow-sassy.png',
-    secondaryAlt: 'Mallow giving a sideways, knowing look',
+    // Studio-only console controller (window.mallow). Websites use visage.js instead (see integration.js).
     api: {
       global: 'mallow',
       example: `mallow.setState('listening');
@@ -51,6 +52,8 @@ mallow.setAudioLevel(0.6);`,
     image: 'blob.png',
     imageAlt: 'Green three-dimensional blob mascot with a wide grin',
     tint: '#9cc08f',
+    states: [],
+    expressions: SHEET_EXPRESSIONS.map(e => e.id),
     moods: SHEET_EXPRESSIONS.length,
     fact: `${count(SHEET_EXPRESSIONS.length, 'look')} · parts you can hide`,
     load: () => import('./blob'),
@@ -64,6 +67,8 @@ mallow.setAudioLevel(0.6);`,
     imageAlt: 'Particle portrait presence glowing blue on black',
     tint: '#121212',
     dark: true,
+    states: PORTRAIT_STATES.map(s => s.id),
+    expressions: [],
     moods: PORTRAIT_STATES.length,
     fact: `Face to orb · ${count(PORTRAIT_STATES.length, 'state')} · reacts to voice`,
     load: () => import('./portrait'),
