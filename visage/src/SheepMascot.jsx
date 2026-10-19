@@ -6,8 +6,8 @@ import {FACE_BASE,SHEEP_EXPRESSIONS} from './sheepExpressions';
 
 import {createSheepModel} from './SheepModel';
 
-export default function SheepMascot({config,audioLevel=0,onReady,onError,controlRef}){
-  const host=useRef();const live=useRef();live.current={config,audioLevel,onReady,onError};
+export default function SheepMascot({config,audioLevel=0,onReady,onError,controlRef,pointer}){
+  const host=useRef();const live=useRef();live.current={config,audioLevel,onReady,onError,pointer};
   useEffect(()=>{
     const el=host.current;let renderer;const clear=!!live.current.config.transparent;
     try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:clear,preserveDrawingBuffer:true})}catch{live.current.onError?.('WebGL is unavailable. Enable hardware acceleration to render the sheep.');return}
@@ -27,6 +27,8 @@ export default function SheepMascot({config,audioLevel=0,onReady,onError,control
     const api={resetCamera(){camera.position.set(-.25,2.5,10.4);controls.target.set(0,2.02,0);controls.update()},capture(){renderer.render(scene,camera);return renderer.domElement.toDataURL('image/png')}};
     if(controlRef)controlRef.current=api;live.current.onReady?.();
     const damp=(a,b,dt)=>THREE.MathUtils.damp(a,b,9,dt);
+    // Smoothed cursor (-1..1) from the optional `pointer` ref; config.follow switches it on.
+    let fx=0,fy=0;
     function animate(now){frame=requestAnimationFrame(animate);const dt=Math.min((now-previous)/1000,.05);previous=now;const c=live.current.config;if(c.motion)elapsed+=dt*c.speed;const t=elapsed;
       if(!clear){scene.background=new THREE.Color(c.background);scene.fog.color.set(c.background);ground.material.color.set(c.background)}rig.skin.color.set(c.skin);rig.faceSkin.color.set(c.skin);rig.wool.color.set(c.wool);renderer.toneMappingExposure=c.exposure;camera.zoom=c.zoom;camera.updateProjectionMatrix();controls.autoRotate=c.autoRotate&&c.motion;controls.autoRotateSpeed=.8;controls.update();
       const target={...FACE_BASE,...SHEEP_EXPRESSIONS[c.expression]};if(c.motion&&c.state==='idle'){target.lookX+=Math.sin(t*.43)*.045;target.lookY+=Math.sin(t*.31)*.025}
@@ -36,15 +38,16 @@ export default function SheepMascot({config,audioLevel=0,onReady,onError,control
       if(c.state==='success'){target.smile=1;target.mouth=.4;target.bounce=.08}
       if(c.state==='error'){target.brow=.8;target.smile=-.5;target.tilt=-.15}
       for(const k of Object.keys(FACE_BASE))target[k]=FACE_BASE[k]+(target[k]-FACE_BASE[k])*c.intensity;
-      target.lookX=THREE.MathUtils.clamp(target.lookX+c.gazeX,-1,1);target.lookY=THREE.MathUtils.clamp(target.lookY+c.gazeY,-1,1);
+      const p=live.current.pointer?.current,follow=!!(p&&c.follow&&c.motion&&c.state!=='sleeping');fx=THREE.MathUtils.damp(fx,follow?p.x:0,5,dt);fy=THREE.MathUtils.damp(fy,follow?p.y:0,5,dt);
+      target.lookX=THREE.MathUtils.clamp(target.lookX+c.gazeX+fx*.7,-1,1);target.lookY=THREE.MathUtils.clamp(target.lookY+c.gazeY+fy*.55,-1,1);
       target.mouth=Math.max(target.mouth,c.mouthOpen,live.current.audioLevel);
       if(c.state==='speaking'&&c.motion)target.mouth=Math.max(target.mouth,.08+Math.abs(Math.sin(t*11)*Math.sin(t*7.1))*.65);
       if(c.viseme!=='auto'){const visemes={rest:[0,0],A:[.85,0],E:[.35,0],O:[.7,1],U:[.35,1],M:[0,0],F:[.12,0]};[target.mouth,target.round]=visemes[c.viseme]||[0,0]}
       let blink=0;if(c.motion&&c.autoBlink){nextBlink-=dt;if(nextBlink<0){blinkTime=.18;nextBlink=2.8+Math.random()*3}if(blinkTime>0){blinkTime-=dt;blink=Math.sin(Math.max(0,blinkTime)/.18*Math.PI)}}target.blink=blink;
       for(const k in smooth)smooth[k]=damp(smooth[k],target[k]??0,dt);
-      rig.root.rotation.y=c.yaw-.12;rig.root.position.y=c.motion?Math.abs(Math.sin(t*3))*smooth.bounce:0;rig.body.scale.y=1+(c.motion?Math.sin(t*1.65)*.007:0);rig.tail.rotation.x=c.motion?Math.sin(t*1.3)*.05:0;
+      rig.root.rotation.y=c.yaw-.12+fx*.3;rig.root.position.y=c.motion?Math.abs(Math.sin(t*3))*smooth.bounce:0;rig.body.scale.y=1+(c.motion?Math.sin(t*1.65)*.007:0);rig.tail.rotation.x=c.motion?Math.sin(t*1.3)*.05:0;
       rig.head.rotation.z=smooth.tilt;rig.head.rotation.x=c.motion?(c.state==='listening'?Math.sin(t*2)*.04:Math.sin(t*.9)*.012+(c.state==='speaking'?Math.sin(t*4)*.015:0)):0;
-      rig.head.rotation.y=smooth.lookX*.065;
+      rig.head.rotation.y=smooth.lookX*.065+fx*.22;rig.head.rotation.x-=fy*.1;
       rig.ears.forEach((ear,i)=>{ear.rotation.z=(i?1:-1)*.12+(c.motion?Math.sin(t*1.7+i)*.035:0)});
       const ref=c.pose==='reference';rig.legs[0].rotation.x=damp(rig.legs[0].rotation.x,ref?-1.12: c.pose==='dance'?Math.sin(t*3)*.6:0,dt);rig.legs[0].rotation.z=damp(rig.legs[0].rotation.z,ref?-.82:0,dt);rig.legs[1].rotation.z=-.08;
       rig.updateArms(c.pose,t,dt,c.motion);

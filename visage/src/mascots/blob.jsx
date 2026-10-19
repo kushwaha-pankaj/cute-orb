@@ -22,6 +22,7 @@ const defaults = applyLook(
     bobAmount: 0.035,
     bobSpeed: 1.4,
     autoBlink: true,
+    follow: true,
     showEyes: true,
     showMouth: true,
     showTongue: true,
@@ -35,8 +36,8 @@ const defaults = applyLook(
 // Pull the camera back so the blob sits clear of the floating studio panels.
 const ROOM_ZOOM = 0.66;
 
-function Renderer({config, onReady, onError}) {
-  return <GreenBlob config={{...config, zoom: ROOM_ZOOM}} onReady={onReady} onError={onError} />;
+function Renderer({config, pointer, onReady, onError}) {
+  return <GreenBlob config={{...config, zoom: ROOM_ZOOM}} pointer={pointer} onReady={onReady} onError={onError} />;
 }
 
 export default {

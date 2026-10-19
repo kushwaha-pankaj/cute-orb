@@ -9,6 +9,7 @@ import {
   Mic,
   MicOff,
   Moon,
+  MousePointer2,
   Orbit,
   Pause,
   Play,
@@ -28,7 +29,9 @@ import useVoice from './useVoice';
  * studio definition:
  *
  *   defaults        full config object the renderer understands
- *   Renderer        ({config, audioLevel, speechCue, theme, onReady, onError, controlRef}) => JSX
+ *   Renderer        ({config, audioLevel, speechCue, pointer, theme, onReady, onError, controlRef}) => JSX
+ *                   `pointer` is a ref to the cursor ({x, y} in -1..1 around the stage); renderers
+ *                   follow it while config.follow is true (the toolbar shows a toggle for it).
  *   panels          [{id, label, controls: [...schema, see controls.jsx]}]
  *   states?         {key, options: [{id, label, symbol, caption?}]}     AI presence states
  *   expressions?    {key, label, options: [{id, label, symbol}], apply?(config, id)}
@@ -122,6 +125,8 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
   const [line, setLine] = useState(def.voice?.line || '');
   const [copied, setCopied] = useState(false);
   const controlRef = useRef(null);
+  const canvasRef = useRef(null);
+  const pointerRef = useRef({x: 0, y: 0});
   const configRef = useRef(config);
   configRef.current = config;
 
@@ -156,6 +161,27 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
       /* storage can be unavailable; settings still work for this visit */
     }
   }, [config, def]);
+
+  // Shared cursor for every renderer: -1..1 around the stage, centred a little above the
+  // middle where faces sit. It eases back to centre when the cursor leaves the window.
+  useEffect(() => {
+    const clamp = v => Math.max(-1, Math.min(1, v));
+    const move = e => {
+      const r = canvasRef.current?.getBoundingClientRect();
+      if (!r?.width) return;
+      pointerRef.current = {
+        x: clamp((e.clientX - (r.left + r.width / 2)) / (r.width / 2)),
+        y: clamp(-(e.clientY - (r.top + r.height * 0.42)) / (r.height / 2)),
+      };
+    };
+    const leave = () => (pointerRef.current = {x: 0, y: 0});
+    window.addEventListener('pointermove', move, {passive: true});
+    document.documentElement.addEventListener('mouseleave', leave);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      document.documentElement.removeEventListener('mouseleave', leave);
+    };
+  }, []);
 
   useEffect(() => {
     const escape = e => e.key === 'Escape' && setClean(false);
@@ -229,12 +255,13 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
 
   return (
     <div className={roomClass} style={{'--surface': def.surface ? def.surface(theme) : meta.tint}}>
-      <div className="st-canvas" aria-label={`${meta.name}, interactive 3D preview`}>
+      <div className="st-canvas" ref={canvasRef} aria-label={`${meta.name}, interactive 3D preview`}>
         <Renderer
           config={config}
           theme={theme}
           audioLevel={voice.mic ? voice.level : externalLevel}
           speechCue={voice.speechCue}
+          pointer={pointerRef}
           controlRef={controlRef}
           onReady={setReadyInfo}
           onError={onNotice}
@@ -424,6 +451,11 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
             {'motion' in config && (
               <IconButton label={config.motion ? 'Pause animation' : 'Play animation'} onClick={() => patch('motion', !config.motion)}>
                 {config.motion ? <Pause size={16} /> : <Play size={16} />}
+              </IconButton>
+            )}
+            {'follow' in config && (
+              <IconButton label={config.follow ? 'Stop following cursor' : 'Follow cursor'} pressed={!!config.follow} onClick={() => patch('follow', !config.follow)}>
+                <MousePointer2 size={16} />
               </IconButton>
             )}
             {def.spinKey && (

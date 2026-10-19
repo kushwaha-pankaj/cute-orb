@@ -6,13 +6,13 @@ const stateSymbols = {idle: '◌', listening: '◉', thinking: '✳', speaking: 
 const title = s => s[0].toUpperCase() + s.slice(1);
 const poseLabel = p => (p === 'reference' ? 'Signature' : title(p));
 
-function Renderer({config, audioLevel, onReady, onError, controlRef}) {
-  return <SheepMascot config={config} audioLevel={audioLevel ?? 0} onReady={onReady} onError={onError} controlRef={controlRef} />;
+function Renderer({config, audioLevel, pointer, onReady, onError, controlRef}) {
+  return <SheepMascot config={config} audioLevel={audioLevel ?? 0} pointer={pointer} onReady={onReady} onError={onError} controlRef={controlRef} />;
 }
 
 export default {
   // Pulled back a little so Mallow sits clear of the floating panels.
-  defaults: {...SHEEP_DEFAULTS, zoom: 0.82},
+  defaults: {...SHEEP_DEFAULTS, zoom: 0.82, follow: true},
   storageKey: 'visage-mallow-v1',
   transient: ['state', 'viseme', 'mouthOpen'],
   Renderer,

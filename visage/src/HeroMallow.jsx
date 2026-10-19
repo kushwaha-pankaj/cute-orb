@@ -2,13 +2,15 @@ import {useEffect, useRef} from 'react';
 import SheepMascot from './SheepMascot';
 import {SHEEP_DEFAULTS} from './sheepExpressions';
 
-/** Transparent, cursor-aware Mallow for the landing hero. Mutates one config object so pointer moves never re-render. */
+/** Transparent, cursor-aware Mallow for the landing hero. The cursor feeds a ref, so pointer moves never re-render. */
 export default function HeroMallow({expression = 'happy', pose = 'reference', onError}) {
   const config = useRef(null);
+  const pointer = useRef({x: 0, y: 0});
   if (!config.current) {
     config.current = {
       ...SHEEP_DEFAULTS,
       transparent: true,
+      follow: true,
       expression,
       pose,
       zoom: 1.12,
@@ -19,17 +21,17 @@ export default function HeroMallow({expression = 'happy', pose = 'reference', on
   config.current.pose = pose;
 
   useEffect(() => {
-    if (!config.current.motion) return;
     const move = e => {
-      const x = (e.clientX / innerWidth) * 2 - 1;
-      const y = (e.clientY / innerHeight) * 2 - 1;
-      config.current.gazeX = x * 0.7;
-      config.current.gazeY = -y * 0.45;
-      config.current.yaw = x * 0.35;
+      pointer.current = {x: (e.clientX / innerWidth) * 2 - 1, y: -((e.clientY / innerHeight) * 2 - 1)};
     };
+    const leave = () => (pointer.current = {x: 0, y: 0});
     addEventListener('pointermove', move, {passive: true});
-    return () => removeEventListener('pointermove', move);
+    document.documentElement.addEventListener('mouseleave', leave);
+    return () => {
+      removeEventListener('pointermove', move);
+      document.documentElement.removeEventListener('mouseleave', leave);
+    };
   }, []);
 
-  return <SheepMascot config={config.current} onError={onError} />;
+  return <SheepMascot config={config.current} pointer={pointer} onError={onError} />;
 }

@@ -212,10 +212,10 @@ function setPartToggle(root, names, visible) {
  *   mouthStyle   open | smile | o
  * Expressions in the UI write these same fields — no parallel preset fight.
  */
-export default function GreenBlob({config, onError, onReady}) {
+export default function GreenBlob({config, onError, onReady, pointer}) {
   const host = useRef(null);
-  const live = useRef({config});
-  live.current = {config};
+  const live = useRef({config, pointer});
+  live.current = {config, pointer};
 
   useEffect(() => {
     let renderer;
@@ -319,6 +319,9 @@ export default function GreenBlob({config, onError, onReady}) {
     let parts = {};
     let lastBodyColor = '';
     let blinkHold = 0;
+    // Smoothed cursor (-1..1) from the optional `pointer` ref; config.follow switches it on.
+    let followX = 0;
+    let followY = 0;
     let nextBlink = 2.8 + Math.random() * 2;
 
     const state = {
@@ -468,8 +471,12 @@ export default function GreenBlob({config, onError, onReady}) {
       const showEyes = c.showEyes !== false;
 
       // Direct targets from sliders / expression-written config
-      let targetLookX = THREE.MathUtils.clamp(c.lookX ?? 0, -1, 1);
-      let targetLookY = THREE.MathUtils.clamp(c.lookY ?? 0, -1, 1);
+      const p = live.current.pointer?.current;
+      const follow = !!(p && c.follow && c.motion);
+      followX = THREE.MathUtils.damp(followX, follow ? p.x : 0, 5, dt);
+      followY = THREE.MathUtils.damp(followY, follow ? p.y : 0, 5, dt);
+      let targetLookX = THREE.MathUtils.clamp((c.lookX ?? 0) + followX * 0.9, -1, 1);
+      let targetLookY = THREE.MathUtils.clamp((c.lookY ?? 0) + followY * 0.7, -1, 1);
       let targetMouth = THREE.MathUtils.clamp(c.mouthOpen ?? 0, 0, 1);
       let targetBlink = THREE.MathUtils.clamp(c.blink ?? 0, 0, 1);
 
@@ -578,7 +585,8 @@ export default function GreenBlob({config, onError, onReady}) {
       }
 
       root.position.y = state.bob;
-      root.rotation.y = THREE.MathUtils.degToRad(state.yaw);
+      root.rotation.y = THREE.MathUtils.degToRad(state.yaw) + followX * 0.38;
+      root.rotation.x = -followY * 0.08;
       root.rotation.z = Math.sin(t * 0.55) * 0.012 * motion;
       root.scale.setScalar(state.scale);
 

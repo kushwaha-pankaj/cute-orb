@@ -46,6 +46,8 @@ Production: `npm run build` then `npm run preview`.
 
 The renderer should mount into an element with the `presence` class, which fills the stage.
 
+To make a mascot cursor-reactive, add `follow: true` to its defaults and read the `pointer` prop in the renderer: a ref whose `current` is `{x, y}` in -1..1 around the stage. Ease toward it each frame while `config.follow` and `config.motion` are on. The studio toolbar shows a Follow cursor toggle for any mascot with a `follow` key.
+
 ## Files
 
 - `public/integration.md` — controller notes
