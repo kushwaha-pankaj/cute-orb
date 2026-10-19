@@ -1,3 +1,6 @@
+import {useRef, useState} from 'react';
+import {featured} from './mascots';
+import {heroSettings} from './heroSettings';
 // Development-only full-frame model render, used to capture genuine product imagery.
 import SheepMascot from './SheepMascot';
 import Presence from './Presence';
@@ -11,6 +14,7 @@ const sheepShots = {
 };
 
 export default function PortraitCapture({name}) {
+  if (name === 'hero-poster') return <HeroPosterCapture />;
   if (name === 'portrait') {
     return (
       <div className="portrait-capture" style={{position: 'fixed', inset: 0, background: '#121212'}}>
@@ -32,4 +36,17 @@ export default function PortraitCapture({name}) {
       />
     </div>
   );
+}
+
+// Capture through the renderer's supported PNG API, with the hero's exact initial setup.
+function HeroPosterCapture() {
+  const controls = useRef(null);
+  const [png, setPng] = useState('');
+  return <>
+    <div style={{position: 'fixed', top: 0, left: 0, width: 768, height: 768}}>
+      <SheepMascot config={heroSettings(featured.heroProps, false)} controlRef={controls}
+        onReady={() => setPng(controls.current.capture())} onError={console.error} />
+    </div>
+    {png && <a id="hero-poster-download" href={png} download="hero-poster.png" style={{position: 'fixed', bottom: 0, left: 0, zIndex: 10}}>Download matching hero preview</a>}
+  </>;
 }

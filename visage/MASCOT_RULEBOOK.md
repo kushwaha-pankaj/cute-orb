@@ -310,6 +310,7 @@ Run `npm run dev`, open `#studio/<id>`, and tick every box.
 | What went wrong | Mascot | Rule |
 |---|---|---|
 | Callback identity recreated the scene; scrolling rebuilt the hero and hidden scenes kept drawing | All | R3.2; use live callback refs and visibility-aware render loops |
+| Hero used a studio still with a different pose, backdrop and crop, causing a visible image swap | Mallow | Capture the actual transparent hero scene; match its vertical framing and paint the poster before WebGL initialisation |
 | First frame showed undeformed features over the loading poster | Mallow | Initialise pose and face before rendering; reveal the canvas after the first completed frame |
 | Names and counts hard-coded across pages | All | R1.1, R1.2 |
 | Product stills contained studio UI | Mallow | R2.1 |

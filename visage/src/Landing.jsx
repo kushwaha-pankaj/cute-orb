@@ -96,6 +96,8 @@ export default function Landing({onNotice, notice}) {
   const [hero3D, setHero3D] = useState(true);
   const [heroVisible, setHeroVisible] = useState(false);
   const [heroReady, setHeroReady] = useState(false);
+  const [posterPainted, setPosterPainted] = useState(false);
+  const heroPoster = useRef(null);
   const [openFaq, setOpenFaq] = useState(0);
   const [copied, setCopied] = useState(false);
   const [devTab, setDevTab] = useState('html');
@@ -106,7 +108,27 @@ export default function Landing({onNotice, notice}) {
   const [footerNear, setFooterNear] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => { if(entry.isIntersecting) setHeroVisible(true); });
+    const image = heroPoster.current;
+    let cancelled = false, first = 0, second = 0;
+    const paint = async () => {
+      try { await image.decode(); } catch { /* A failed poster must not prevent the live preview. */ }
+      if (cancelled) return;
+      // Give the lightweight image a complete paint before building the WebGL scene.
+      first = requestAnimationFrame(() => {
+        second = requestAnimationFrame(() => { if (!cancelled) setPosterPainted(true); });
+      });
+    };
+    if (image.complete) paint();
+    else { image.addEventListener('load', paint, {once: true}); image.addEventListener('error', paint, {once: true}); }
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(first); cancelAnimationFrame(second);
+      image.removeEventListener('load', paint); image.removeEventListener('error', paint);
+    };
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => { if(entry.isIntersecting && !matchMedia('(prefers-reduced-motion: reduce)').matches && !navigator.connection?.saveData) setHeroVisible(true); });
     if (stage.current) observer.observe(stage.current);
     return () => observer.disconnect();
   }, []);
@@ -208,8 +230,8 @@ export default function Landing({onNotice, notice}) {
 
             <div className="lp-stage" data-ready={heroReady} ref={stage} aria-hidden={!hero3D}>
               <div className="lp-glow" />
-              {!heroReady && <img className="lp-stage-still" src={asset(featured.image)} alt={featured.imageAlt} fetchPriority="high" width="655" height="880" />}
-              {Hero && hero3D && heroVisible ? (
+              <img ref={heroPoster} aria-hidden={heroReady} className="lp-stage-still" src={asset(featured.heroPoster || featured.image)} alt={featured.heroPosterAlt || featured.imageAlt} fetchPriority="high" width="768" height="768" />
+              {Hero && hero3D && heroVisible && posterPainted ? (
                 <Suspense fallback={null}>
                   <Hero {...featured.heroProps} onReady={() => setHeroReady(true)} onError={() => {setHero3D(false);setHeroReady(false)}} />
                 </Suspense>

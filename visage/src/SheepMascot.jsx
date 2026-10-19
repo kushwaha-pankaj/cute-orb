@@ -62,9 +62,13 @@ export default function SheepMascot({config,audioLevel=0,onReady,onError,control
       const ref=c.pose==='reference';rig.legs[0].rotation.x=damp(rig.legs[0].rotation.x,ref?-1.12: c.pose==='dance'?Math.sin(t*3)*.6:0,dt);rig.legs[0].rotation.z=damp(rig.legs[0].rotation.z,ref?-.82:0,dt);rig.legs[1].rotation.z=-.08;
       rig.updateArms(c.pose,t,dt,c.motion);
       if(faceTick++%2===0){rig.updateFace(smooth,t)}renderer.render(scene,camera);if(!ready){ready=true;live.current.onReady?.()}
-    }const stopLoop=createRenderLoop(el,animate);
+    }
+    let disposed=false,stopLoop=()=>{};
+    const start=()=>{if(!disposed)stopLoop=createRenderLoop(el,animate)};
+    // Compile the hero's materials asynchronously before exposing its first frame.
+    if(clear)renderer.compileAsync(scene,camera).then(start).catch(()=>{if(!disposed)live.current.onError?.('The 3D preview could not start. The still preview remains available.')});else start();
     const lost=e=>{e.preventDefault();live.current.onError?.('The graphics context was interrupted. Reload to restore the 3D preview.')};renderer.domElement.addEventListener('webglcontextlost',lost);
-    return()=>{stopLoop();renderer.domElement.removeEventListener('webglcontextlost',lost);ro.disconnect();controls.dispose();if(controlRef)controlRef.current=null;const geos=new Set(),mats=new Set(),textures=new Set();scene.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material])){mats.add(m);for(const v of Object.values(m))if(v?.isTexture)textures.add(v)}});geos.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());env.dispose();renderer.dispose();renderer.domElement.remove()};
+    return()=>{disposed=true;stopLoop();renderer.domElement.removeEventListener('webglcontextlost',lost);ro.disconnect();controls.dispose();if(controlRef)controlRef.current=null;const geos=new Set(),mats=new Set(),textures=new Set();scene.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material])){mats.add(m);for(const v of Object.values(m))if(v?.isTexture)textures.add(v)}});geos.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());env.dispose();renderer.dispose();renderer.domElement.remove()};
   },[]);
   return <div className="presence sheep-canvas" ref={host}/>;
 }

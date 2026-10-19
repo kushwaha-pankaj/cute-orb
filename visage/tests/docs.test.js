@@ -20,7 +20,7 @@ test('documentation navigation, search and deep links resolve consistently', () 
 
 test('every guide renders for every mascot and its documentation links resolve', async () => {
   globalThis.location = {origin: 'https://example.com', hostname: 'example.com'};
-  const server = await createServer({server: {middlewareMode: true}, appType: 'custom'});
+  const server = await createServer({server: {middlewareMode: true, watch: null}, appType: 'custom'});
   try {
     const {getSections} = await server.ssrLoadModule('/src/docs/content.jsx');
     const {mascots} = await server.ssrLoadModule('/src/mascots/index.js');

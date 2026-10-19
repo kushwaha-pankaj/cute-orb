@@ -61,3 +61,29 @@ test('Mallow keeps its geometry budget and all expressions and poses produce fin
     for(const pose of SHEEP_POSES) {rig.updateArms(pose, .5, 1/30, true); finite();}
   } finally { if(previous === undefined) delete globalThis.document; else globalThis.document = previous; }
 });
+
+test('the initial hero uses a small transparent preview matching its live pose', async () => {
+  const {createServer} = await import('vite');
+  const {createElement} = await import('react');
+  const {renderToStaticMarkup} = await import('react-dom/server');
+  const server = await createServer({server:{middlewareMode:true,watch:null},appType:'custom'});
+  try {
+    const {featured} = await server.ssrLoadModule('/src/mascots/index.js');
+    const {heroSettings} = await server.ssrLoadModule('/src/heroSettings.js');
+    const {default:Landing} = await server.ssrLoadModule('/src/Landing.jsx');
+    const html = renderToStaticMarkup(createElement(Landing));
+    const image = html.match(/<img[^>]*class="lp-stage-still"[^>]*>/)?.[0];
+    assert.ok(image?.includes(featured.heroPoster));
+    assert.ok(!image.includes(`/${featured.image}`), 'the studio portrait must not be used as a hero placeholder');
+    assert.ok(image.includes('fetchPriority="high"'));
+    const settings = heroSettings(featured.heroProps, false);
+    assert.equal(settings.pose, featured.heroProps.pose);
+    assert.equal(settings.expression, featured.heroProps.expression);
+    assert.equal(settings.transparent, true);
+    const poster = await readFile(new URL(`../public/images/${featured.heroPoster}`,import.meta.url));
+    assert.ok(poster.length < 50_000);
+    assert.equal(poster.toString('ascii',8,12),'WEBP');
+    assert.equal(poster.toString('ascii',12,16),'VP8X');
+    assert.ok(poster[20] & 0x10,'the first image must preserve transparency');
+  } finally {await server.close();}
+});

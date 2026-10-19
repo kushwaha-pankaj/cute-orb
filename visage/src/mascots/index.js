@@ -31,6 +31,8 @@ export const mascots = [
     // Optional: a transparent, cursor-aware renderer for the landing hero and cast card.
     hero: () => import('../HeroMallow'),
     heroProps: {expression: 'excited', pose: 'wave'},
+    heroPoster: 'mallow-hero-poster.webp',
+    heroPosterAlt: 'Mallow the ivory wool sheep smiling and waving',
     // Studio-only console controller (window.mallow). Websites use visage.js instead (see integration.js).
     api: {
       global: 'mallow',

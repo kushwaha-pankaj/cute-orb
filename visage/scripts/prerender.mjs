@@ -9,7 +9,7 @@ const base = env.VISAGE_BASE || '/';
 const site = (env.VITE_PUBLIC_SITE_URL || publicSiteUrl).replace(/\/$/, '');
 if (!site.startsWith('https://')) throw new Error('The canonical site URL must use HTTPS.');
 const template = await readFile('dist/index.html', 'utf8');
-const server = await createServer({base, mode: 'production', server: {middlewareMode: true}, appType: 'custom'});
+const server = await createServer({base, mode: 'production', server: {middlewareMode: true, watch: null}, appType: 'custom'});
 const escape = value => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const json = value => JSON.stringify(value).replace(/</g, '\\u003c');
 const pages = [];

@@ -304,14 +304,25 @@
   background: radial-gradient(circle, rgb(255 179 107 / 0.35), transparent 65%);
   pointer-events: none;
 }
+/* Match a square capture to the renderer's fixed vertical field of view at any aspect ratio. */
 .lp-stage-still {
   position: absolute;
-  inset: 6% 8% 0;
-  width: 84%;
-  height: 94%;
-  object-fit: cover;
-  border-radius: 40% 40% 32px 32px;
-  mix-blend-mode: multiply;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 280ms ease;
+}
+.lp-stage[data-ready="true"] .lp-stage-still { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-stage-still { transition: none; }
 }
 
 .lp-lede {
