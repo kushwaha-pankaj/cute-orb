@@ -2,9 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8"/>
+    <style>html[data-client-route] #root > .lp { display: none; }</style>
+    <script>if (/^#(?:embed|studio|portrait)(?:\/|$)/.test(location.hash)) document.documentElement.dataset.clientRoute = '';</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="icon" type="image/png" href="%BASE_URL%images/mascotty-logo.png"/>
-    <link rel="apple-touch-icon" href="%BASE_URL%images/mascotty-logo.png"/>
+    <link rel="icon" type="image/png" href="%BASE_URL%images/favicon.png"/>
+    <link rel="apple-touch-icon" href="%BASE_URL%images/apple-touch-icon.png"/>
+    <link rel="sitemap" type="application/xml" href="%BASE_URL%sitemap.xml"/>
     <meta name="theme-color" content="#06525c"/>
     <meta name="description" content="Mascotty — an open-source 3D character studio for the community. Customise a mascot and connect it to your website or AI assistant."/>
     <title>Mascotty — Soft faces for sharp systems</title>

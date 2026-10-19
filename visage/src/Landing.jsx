@@ -1,3 +1,4 @@
+import {docsHref} from './docs/navigation';
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {ArrowUpRight, AudioLines, Bot, Copy, Check, Code2, Globe, Plus, Minus, Plug, Github} from 'lucide-react';
 import '@fontsource-variable/urbanist';
@@ -9,7 +10,7 @@ import './Landing.css';
 const FooterWordmark = lazy(() => import('./FooterWordmark'));
 
 const asset = name => `${import.meta.env.BASE_URL}images/${name}`;
-const notes = '#docs/quick-start';
+const notes = docsHref();
 const studioHref = m => `#studio/${m.id}`;
 const words = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
 const say = n => words[n] || String(n);
@@ -83,18 +84,18 @@ const nav = [
   {href: '#ask', label: 'FAQ'},
 ];
 
-function canRender3D() {
-  try {
-    return !!document.createElement('canvas').getContext('webgl2');
-  } catch {
-    return false;
-  }
-}
-
 export default function Landing({onNotice, notice}) {
   const [live, setLive] = useState(null);
-  const [hero3D, setHero3D] = useState(canRender3D);
+  const [activeHash, setActiveHash] = useState('#home');
+  useEffect(() => {
+    const sync = () => setActiveHash(location.hash || '#home');
+    sync();
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
+  }, []);
+  const [hero3D, setHero3D] = useState(true);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [heroReady, setHeroReady] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
   const [copied, setCopied] = useState(false);
   const [devTab, setDevTab] = useState('html');
@@ -105,7 +106,7 @@ export default function Landing({onNotice, notice}) {
   const [footerNear, setFooterNear] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => setHeroVisible(entry.isIntersecting));
+    const observer = new IntersectionObserver(([entry]) => { if(entry.isIntersecting) setHeroVisible(true); });
     if (stage.current) observer.observe(stage.current);
     return () => observer.disconnect();
   }, []);
@@ -162,7 +163,7 @@ export default function Landing({onNotice, notice}) {
       <div className="lp-frame">
         <header className="lp-header">
           <a className="lp-logo" href="#home" aria-label="Mascotty home">
-            <img src={asset('mascotty-logo.png')} alt="" width="34" height="34" />
+            <img src={asset('mascotty-logo.webp')} alt="" width="34" height="34" />
             Mascotty
           </a>
           <button
@@ -175,7 +176,7 @@ export default function Landing({onNotice, notice}) {
           </button>
           <nav id="lp-nav" className={menu ? 'is-open' : ''} aria-label="Main" onClick={() => setMenu(false)}>
             {nav.map(item => (
-              <a key={item.href} href={item.href} aria-current={(location.hash || '#home') === item.href ? 'page' : undefined}>
+              <a key={item.href} href={item.href} aria-current={activeHash === item.href ? 'page' : undefined}>
                 {item.label}
               </a>
             ))}
@@ -205,15 +206,14 @@ export default function Landing({onNotice, notice}) {
               </span>
             </h1>
 
-            <div className="lp-stage" ref={stage} aria-hidden={!hero3D}>
+            <div className="lp-stage" data-ready={heroReady} ref={stage} aria-hidden={!hero3D}>
               <div className="lp-glow" />
+              {!heroReady && <img className="lp-stage-still" src={asset(featured.image)} alt={featured.imageAlt} fetchPriority="high" width="655" height="880" />}
               {Hero && hero3D && heroVisible ? (
                 <Suspense fallback={null}>
-                  <Hero {...featured.heroProps} onError={() => setHero3D(false)} />
+                  <Hero {...featured.heroProps} onReady={() => setHeroReady(true)} onError={() => {setHero3D(false);setHeroReady(false)}} />
                 </Suspense>
-              ) : (
-                <img className="lp-stage-still" src={asset(featured.image)} alt={featured.imageAlt} />
-              )}
+              ) : null}
             </div>
 
             <p className="lp-lede">
@@ -459,7 +459,7 @@ export default function Landing({onNotice, notice}) {
         <div className="lp-community-story" data-reveal>
           <h2 id="community-title">Open source.<br />Shared imagination.</h2>
           <p>Mascotty is for the community. A place for developers, designers and character makers to build a more expressive web, together.</p>
-          <img className="lp-community-mark" src={asset('mascotty-logo.png')} alt="" width="240" height="240" loading="lazy" />
+          <img className="lp-community-mark" src={asset('mascotty-logo.webp')} alt="" width="240" height="240" loading="lazy" />
         </div>
         <div className="lp-community-invite" data-reveal>
           <h3>Your ideas belong here.</h3>
@@ -469,7 +469,7 @@ export default function Landing({onNotice, notice}) {
             <Github size={19} /> Explore on GitHub <ArrowUpRight size={18} />
           </a>
           <div className="lp-community-paths">
-            <a href="#docs/contributing">
+            <a href={docsHref('contributing')}>
               <span>Build with us<small>Start with the contributor guide</small></span><ArrowUpRight size={22} />
             </a>
             <a href={`${repositoryUrl}/issues`} target="_blank" rel="noreferrer">
@@ -490,7 +490,7 @@ export default function Landing({onNotice, notice}) {
           </div>
           <div className="lp-footer-links">
             <a className="lp-logo" href="#home" aria-label="Mascotty home">
-              <img src={asset('mascotty-logo.png')} alt="" width="38" height="38" />
+              <img src={asset('mascotty-logo.webp')} alt="" width="38" height="38" />
               <span>Mascotty<small>Soft faces for sharp systems.</small></span>
             </a>
             <nav aria-label="Explore Mascotty">
@@ -506,7 +506,7 @@ export default function Landing({onNotice, notice}) {
             <nav aria-label="Community resources">
               <h3>Make it together</h3>
               <a href="#community">Our community</a>
-              <a href="#docs/contributing">Contribute <ArrowUpRight size={14} /></a>
+              <a href={docsHref('contributing')}>Contribute <ArrowUpRight size={14} /></a>
               <a href={`${repositoryUrl}/issues`} target="_blank" rel="noreferrer">Ideas & issues <ArrowUpRight size={14} /></a>
             </nav>
           </div>
@@ -516,7 +516,7 @@ export default function Landing({onNotice, notice}) {
           <div className="lp-footer-bottom">
             <span>© {new Date().getFullYear()} Mascotty. Made for the community.</span>
             <a href={repositoryUrl} target="_blank" rel="noreferrer"><Github size={16} /> Open source, open possibilities.</a>
-            <a href="#docs/license">MIT licensed</a>
+            <a href={docsHref('license')}>MIT licensed</a>
             <a href="#home">Back to top ↑</a>
           </div>
         </div>

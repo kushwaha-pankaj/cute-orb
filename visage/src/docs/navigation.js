@@ -11,7 +11,7 @@ export const docsPages = [
   {id: 'license', group: 'Open source', title: 'License & credits', description: 'MIT terms, third-party notices and community ownership.', keywords: 'copyright attribution permissions commercial fonts assets'},
 ];
 
-export const docsHref = (page = 'quick-start', section) => `#docs/${page}${section ? `?section=${encodeURIComponent(section)}` : ''}`;
+export const docsHref = (page = 'quick-start', section) => `${import.meta.env?.BASE_URL || '/'}docs/${page}/${section ? `#docs-${encodeURIComponent(section)}` : ''}`;
 export const getDocsPage = id => docsPages.find(page => page.id === (id || 'quick-start'));
 // Index authored content and code without rendering HTML or adding a search service.
 export const docsText = node => {

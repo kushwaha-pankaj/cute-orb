@@ -3,8 +3,8 @@ import {PORTRAIT_STATES} from './portraitData';
 
 // Portrait is a glowing figure: its light-mode rendering washed the orb out to near-invisible,
 // so the stage stays dark in both themes (the floating controls still follow the theme).
-function Renderer({config, audioLevel, speechCue, pointer, onError}) {
-  return <Presence config={config} state={config.state} theme="dark" audioLevel={audioLevel} speechCue={speechCue} pointer={pointer} onError={onError} />;
+function Renderer({config, audioLevel, speechCue, pointer, onError, onReady}) {
+  return <Presence config={config} state={config.state} theme="dark" audioLevel={audioLevel} speechCue={speechCue} pointer={pointer} onError={onError} onReady={onReady} />;
 }
 
 export default {

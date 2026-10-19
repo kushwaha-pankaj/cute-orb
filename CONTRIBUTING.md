@@ -6,7 +6,7 @@ Source: https://github.com/kushwaha-pankaj/cute-orb
 Issues and ideas: https://github.com/kushwaha-pankaj/cute-orb/issues
 License: MIT (see LICENSE in this repository).
 
-The published contributor guide is available at https://kushwaha-pankaj.github.io/cute-orb/#docs/contributing.
+The published contributor guide is available at https://kushwaha-pankaj.github.io/cute-orb/docs/contributing/.
 
 ## Start developing
 

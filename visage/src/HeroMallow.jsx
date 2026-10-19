@@ -3,7 +3,7 @@ import SheepMascot from './SheepMascot';
 import {SHEEP_DEFAULTS} from './sheepExpressions';
 
 /** Transparent, cursor-aware Mallow for the landing hero. The cursor feeds a ref, so pointer moves never re-render. */
-export default function HeroMallow({expression = 'happy', pose = 'reference', onError}) {
+export default function HeroMallow({expression = 'happy', pose = 'reference', onError, onReady}) {
   const config = useRef(null);
   const pointer = useRef({x: 0, y: 0});
   if (!config.current) {
@@ -33,5 +33,5 @@ export default function HeroMallow({expression = 'happy', pose = 'reference', on
     };
   }, []);
 
-  return <SheepMascot config={config.current} pointer={pointer} onError={onError} />;
+  return <SheepMascot config={config.current} pointer={pointer} onError={onError} onReady={onReady} />;
 }

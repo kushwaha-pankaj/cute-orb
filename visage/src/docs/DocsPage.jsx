@@ -38,9 +38,9 @@ export default function DocsPage({pageId, sectionId}) {
   return <div className="docs">
     <a className="docs-skip" href="#docs-main" onClick={event => { event.preventDefault(); document.getElementById('docs-main')?.focus(); }}>Skip to documentation</a>
     <header className="docs-header">
-      <a className="docs-brand" href="#home" aria-label="Mascotty home"><img src={`${import.meta.env.BASE_URL}images/mascotty-logo.png`} alt="" width="34" height="34" /><span>Mascotty</span></a>
+      <a className="docs-brand" href={import.meta.env.BASE_URL} aria-label="Mascotty home"><img src={`${import.meta.env.BASE_URL}images/mascotty-logo.webp`} alt="" width="34" height="34" /><span>Mascotty</span></a>
       <a className="docs-header-title" href={docsHref()}>Documentation</a>
-      <nav aria-label="Documentation resources"><a href={`#studio/${selected.id}`}>Open studio <ArrowUpRight size={15} /></a><a href={repositoryUrl} target="_blank" rel="noreferrer" aria-label="Mascotty on GitHub"><Github size={20} /></a></nav>
+      <nav aria-label="Documentation resources"><a href={`${import.meta.env.BASE_URL}#studio/${selected.id}`}>Open studio <ArrowUpRight size={15} /></a><a href={repositoryUrl} target="_blank" rel="noreferrer" aria-label="Mascotty on GitHub"><Github size={20} /></a></nav>
       <button className="docs-menu" type="button" aria-expanded={menu} aria-controls="docs-navigation" onClick={() => setMenu(!menu)}>{menu ? 'Close guides' : 'Browse guides'}</button>
     </header>
     <div className="docs-layout">
@@ -57,13 +57,13 @@ export default function DocsPage({pageId, sectionId}) {
           })}
           {query && <p className="docs-search-status" role="status">{results.length ? `${results.length} matching guide${results.length === 1 ? '' : 's'}` : 'No matching guides. Try “React”, “audio” or “deploy”.'}</p>}
         </nav>
-        <a className="docs-back" href="#home"><ArrowLeft size={15} /> Back to Mascotty</a>
+        <a className="docs-back" href={import.meta.env.BASE_URL}><ArrowLeft size={15} /> Back to Mascotty</a>
       </aside>
       <main className="docs-main" id="docs-main" tabIndex={-1}>
         {page ? <>
           <div className="docs-breadcrumb"><a href={docsHref()}>Docs</a><span>/</span><span>{page.group}</span></div>
           <header className="docs-page-heading"><h1 ref={heading} tabIndex={-1}>{page.title}</h1><p>{page.description}</p></header>
-          {['quick-start', 'react', 'configuration', 'assistant'].includes(page.id) && <div className="docs-character-select"><label htmlFor="docs-character">Examples for</label><select id="docs-character" value={mascotId} onChange={event => setMascotId(event.target.value)}>{mascots.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select><a href={`#studio/${selected.id}`}>Customise in studio <ArrowUpRight size={14} /></a></div>}
+          {['quick-start', 'react', 'configuration', 'assistant'].includes(page.id) && <div className="docs-character-select"><label htmlFor="docs-character">Examples for</label><select id="docs-character" value={mascotId} onChange={event => setMascotId(event.target.value)}>{mascots.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select><a href={`${import.meta.env.BASE_URL}#studio/${selected.id}`}>Customise in studio <ArrowUpRight size={14} /></a></div>}
           <nav className="docs-mobile-toc" aria-label="On this page"><details><summary>On this page</summary>{sections.map(section => <a key={section.id} href={docsHref(page.id, section.id)}>{section.title}</a>)}</details></nav>
           <article>{sections.map(section => <section className="docs-section" key={section.id} id={`docs-${section.id}`} tabIndex={-1} aria-labelledby={`docs-title-${section.id}`}><h2 id={`docs-title-${section.id}`}><a href={docsHref(page.id, section.id)}>{section.title}<span aria-hidden="true"> #</span></a></h2>{section.body}</section>)}</article>
           <div className="docs-page-bottom"><p>Found something unclear? <a href={`${repositoryUrl}/issues`} target="_blank" rel="noreferrer">Suggest an improvement <ArrowUpRight size={14} /></a></p><nav aria-label="Next and previous guide">{index > 0 && <a href={docsHref(docsPages[index - 1].id)}><ArrowLeft size={17} /><span><small>Previous</small>{docsPages[index - 1].title}</span></a>}{index < docsPages.length - 1 && <a href={docsHref(docsPages[index + 1].id)}><span><small>Next guide</small>{docsPages[index + 1].title}</span><ArrowRight size={17} /></a>}</nav></div>

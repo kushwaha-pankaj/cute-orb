@@ -13,6 +13,7 @@ export const hostUrl = () => {
     if (url.search || url.hash || url.username || url.password) throw new Error('VITE_PUBLIC_SITE_URL must contain only an HTTPS origin and optional path.');
     return url.href.replace(/\/$/, '');
   }
+  if (typeof location === 'undefined') return publicSiteUrl;
   if (import.meta.env.DEV || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(location.hostname)) return publicSiteUrl;
   return new URL(import.meta.env.BASE_URL, location.origin).href.replace(/\/$/, '');
 };

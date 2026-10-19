@@ -1,3 +1,4 @@
+import {docsHref} from '../docs/navigation';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Camera,
@@ -46,7 +47,7 @@ import IntegratePanel from './IntegratePanel';
  */
 
 const asset = name => `${import.meta.env.BASE_URL}images/${name}`;
-const notes = '#docs/quick-start';
+const notes = docsHref();
 function download(href, name) {
   const a = document.createElement('a');
   a.href = href;
@@ -68,7 +69,7 @@ export function StudioTopBar({meta, theme, setTheme, children}) {
     <header className="st-top">
       <div className="st-top-start">
         <a className="st-logo st-glass" href="#home" aria-label="Mascotty home">
-          <img src={asset('mascotty-logo.png')} alt="" width="30" height="30" />
+          <img src={asset('mascotty-logo.webp')} alt="" width="30" height="30" />
           <span>Mascotty</span>
         </a>
         <nav className="st-switch st-glass" aria-label="Choose a character">
@@ -101,6 +102,7 @@ export default function Studio({meta, def, theme, setTheme, onNotice, overrides}
   const [tour, setTour] = useState(null);
   const [clean, setClean] = useState(false);
   const [readyInfo, setReadyInfo] = useState(null);
+  const [rendererReady, setRendererReady] = useState(false);
   const [externalLevel, setExternalLevel] = useState(null);
   const [line, setLine] = useState(def.voice?.line || '');
   const [copied, setCopied] = useState(false);
@@ -219,6 +221,7 @@ export default function Studio({meta, def, theme, setTheme, onNotice, overrides}
   return (
     <div className={roomClass} style={{'--surface': def.surface ? def.surface(theme) : meta.tint}}>
       <div className="st-canvas" ref={canvasRef} aria-label={`${meta.name}, interactive 3D preview`}>
+        {!rendererReady && <div className="st-render-loading" role="status"><img src={`${import.meta.env.BASE_URL}images/${meta.image}`} alt="" /><span>Preparing {meta.name}…</span></div>}
         <Renderer
           config={config}
           theme={theme}
@@ -226,7 +229,7 @@ export default function Studio({meta, def, theme, setTheme, onNotice, overrides}
           speechCue={voice.speechCue}
           pointer={pointerRef}
           controlRef={controlRef}
-          onReady={setReadyInfo}
+          onReady={info => {setReadyInfo(info);setRendererReady(true)}}
           onError={onNotice}
         />
       </div>

@@ -1,3 +1,4 @@
+import {docsHref} from '../docs/navigation';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Bot, Check, Code2, Copy, Download, Globe, Link2, Settings2, X} from 'lucide-react';
 import {
@@ -154,7 +155,7 @@ export default function IntegratePanel({meta, def, config, onClose, onExport, on
                 <button type="button" className="st-pill" onClick={onExport}>
                   <Download size={14} /> Download JSON
                 </button>
-                <a className="st-pill" href="#docs/quick-start">
+                <a className="st-pill" href={docsHref()}>
                   <Link2 size={14} /> Developer documentation
                 </a>
               </div>

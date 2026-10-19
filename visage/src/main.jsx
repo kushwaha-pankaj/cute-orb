@@ -1,111 +1,17 @@
-import {Component, Suspense, lazy, useEffect, useState} from 'react';
-import {createRoot} from 'react-dom/client';
-import Landing from './Landing';
-import {getMascot} from './mascots';
-import './style.css';
+import {hydrateRoot, createRoot} from 'react-dom/client';
+import {App, AppBoundary} from './App';
 
-const DocsPage = lazy(() => import('./docs/DocsPage'));
-const StudioPage = lazy(() => import('./studio/StudioPage'));
-const EmbedPage = lazy(() => import('./embed/EmbedPage'));
-const PortraitCapture = lazy(() => import('./PortraitCapture'));
-
-class AppBoundary extends Component {
-  state = {failed: false};
-  static getDerivedStateFromError() { return {failed: true}; }
-  componentDidCatch() {
-    if (location.hash.startsWith('#embed/') && window.parent !== window) {
-      window.parent.postMessage({visage: 1, event: 'error', error: 'The mascot could not render.'}, '*');
-    }
-  }
-  render() {
-    if (!this.state.failed) return this.props.children;
-    return <main className="page-error" role="alert">
-      <h1>Mascotty could not load.</h1>
-      <p>Check your connection, then reload to get the latest version.</p>
-      <button type="button" onClick={() => location.reload()}>Reload Mascotty</button>
-      <a href={import.meta.env.BASE_URL}>Back to home</a>
-    </main>;
+// Preserve bookmarked hash documentation links while giving each guide a crawlable URL.
+const legacy = location.hash.match(/^#docs\/([a-z-]+)(?:\?section=([^&]+))?$/);
+if (legacy) location.replace(`${import.meta.env.BASE_URL}docs/${legacy[1]}/${legacy[2] ? `#docs-${legacy[2]}` : ''}`);
+else {
+  const root = document.getElementById('root');
+  const app = <AppBoundary><App /></AppBoundary>;
+  // Hash studio/embed routes intentionally start from the client, not the landing markup.
+  if (root.hasChildNodes() && !/^#(?:studio|embed|portrait|home)(?:\/|$)/.test(location.hash)) hydrateRoot(root, app);
+  else {
+    root.replaceChildren();
+    delete document.documentElement.dataset.clientRoute;
+    createRoot(root).render(app);
   }
 }
-
-function UnknownEmbed() {
-  useEffect(() => {
-    if (window.parent !== window) window.parent.postMessage({visage: 1, event: 'error', error: 'Unknown mascot. Choose a character from the Mascotty studio.'}, '*');
-  }, []);
-  return <p className="embed-error">Unknown mascot.</p>;
-}
-
-/** Hash routes: #home, #<section>, #studio/<id>?c=…, #embed/<id>?c=…&bg=… */
-function readRoute() {
-  const [path, search = ''] = (location.hash.slice(1) || 'home').split('?');
-  return {path, query: new URLSearchParams(search), key: location.hash};
-}
-
-function App() {
-  const [route, setRoute] = useState(readRoute);
-  const [notice, setNotice] = useState('');
-  const [section, id] = route.path.split('/');
-  const meta = section === 'studio' || section === 'embed' ? getMascot(id) : null;
-
-  useEffect(() => {
-    const change = () => {
-      setRoute(readRoute());
-      setNotice('');
-    };
-    window.addEventListener('hashchange', change);
-    return () => window.removeEventListener('hashchange', change);
-  }, []);
-
-  useEffect(() => {
-    if (section === 'docs') return;
-    document.title = meta ? `${meta.name} ${section === 'embed' ? 'mascot' : 'studio'} — Mascotty` : 'Mascotty — Soft faces for sharp systems';
-    if (section === 'embed') return;
-    if (meta || route.path === 'home' || section === 'portrait') window.scrollTo(0, 0);
-    else requestAnimationFrame(() => document.getElementById(route.path)?.scrollIntoView({block: 'start'}));
-  }, [route, meta, section]);
-
-  useEffect(() => {
-    if (!notice) return;
-    const timer = setTimeout(() => setNotice(''), 7000);
-    return () => clearTimeout(timer);
-  }, [notice]);
-
-  if (section === 'docs') return (
-    <Suspense fallback={<p className="page-loading">Opening documentation…</p>}>
-      <DocsPage pageId={id} sectionId={route.query.get('section')} />
-    </Suspense>
-  );
-
-  if (import.meta.env.DEV && section === 'portrait') {
-    return (
-      <Suspense fallback={<p>Preparing render…</p>}>
-        <PortraitCapture key={id} name={id} />
-      </Suspense>
-    );
-  }
-
-  if (section === 'embed') {
-    if (!meta) return <UnknownEmbed />;
-    return (
-      <Suspense fallback={null}>
-        <EmbedPage key={route.key} meta={meta} query={route.query} />
-      </Suspense>
-    );
-  }
-
-  if (!meta && section === 'studio') return <main className="page-error">
-    <h1>That character isn't in the cast.</h1>
-    <p>Head back to Mascotty and choose a character from the studio.</p>
-    <a href="#home">Meet the cast</a>
-  </main>;
-
-  if (!meta) return <Landing onNotice={setNotice} notice={notice} />;
-
-  return (
-    <Suspense fallback={<p className="page-loading">Opening {meta.name}…</p>}>
-      <StudioPage key={route.key} meta={meta} query={route.query} notice={notice} onNotice={setNotice} />
-    </Suspense>
-  );
-}
-
-createRoot(document.getElementById('root')).render(<AppBoundary><App /></AppBoundary>);

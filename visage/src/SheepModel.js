@@ -54,11 +54,11 @@ export function createSheepModel() {
       const p=V(xx*radii[0],yy*radii[1],zz*radii[2]);p.add(V((random()-.5)*.035,(random()-.5)*.035,(random()-.5)*.035));
       const n=V(xx/radii[0],yy/radii[1],zz/radii[2]).normalize();placements.push({p:p.add(new THREE.Vector3(...origin)),n,size:lock*(.73+random()*.58)});
     }
-    const lumpGeo=new THREE.SphereGeometry(1,18,12), lp=lumpGeo.attributes.position;
+    const lumpGeo=new THREE.SphereGeometry(1,12,8), lp=lumpGeo.attributes.position;
     for(let i=0;i<lp.count;i++){const x=lp.getX(i),y=lp.getY(i),z=lp.getZ(i),d=1+.085*Math.sin(x*8+y*3)*Math.cos(z*7-y*5);lp.setXYZ(i,x*d,y*d,z*d)}lumpGeo.computeVertexNormals();
     const lumps=new THREE.InstancedMesh(lumpGeo,wool,placements.length*3);lumps.name=name+'_tufts';lumps.castShadow=lumps.receiveShadow=true;
     const curve=new THREE.CatmullRomCurve3(Array.from({length:32},(_,i)=>{const u=i/31,a=u*Math.PI*2.45,r=.62*(1-u*.68);return V(Math.cos(a)*r,Math.sin(a)*r,.16+u*.15)}));
-    const curlGeo=new THREE.TubeGeometry(curve,30,.26,7,false);const curls=new THREE.InstancedMesh(curlGeo,wool,placements.length);curls.name=name+'_curled_strands';curls.castShadow=curls.receiveShadow=true;
+    const curlGeo=new THREE.TubeGeometry(curve,18,.26,5,false);const curls=new THREE.InstancedMesh(curlGeo,wool,placements.length);curls.name=name+'_curled_strands';curls.castShadow=curls.receiveShadow=true;
     const dummy=new THREE.Object3D(),colour=new THREE.Color();let index=0;
     const fuzzPoints=[],fuzzColors=[];
     for(let i=0;i<placements.length;i++){
@@ -71,6 +71,7 @@ export function createSheepModel() {
       dummy.position.copy(p).addScaledVector(n,size*.58);dummy.quaternion.copy(q);dummy.rotateZ(spin);const curlSize=size*(i%3===0?1:.18);dummy.scale.set(curlSize,curlSize*(.85+random()*.3),curlSize);dummy.updateMatrix();curls.setMatrixAt(i,dummy.matrix);curls.setColorAt(i,colour);
       // Short bent hairs provide fuzzy silhouettes and break up the smooth specular surface.
       for(let j=0;j<145;j++){
+        if(j%4!==0){for(let skip=0;skip<7;skip++)random();continue;}
         const a=random()*Math.PI*2,r=Math.sqrt(random())*size*1.1;
         const start=V(Math.cos(a)*r,Math.sin(a)*r,size*(.5+Math.sqrt(Math.max(0,1-(r/size/1.2)**2))*.45)).applyQuaternion(q).add(p);
         const length=.022+random()*.033;const end=start.clone().addScaledVector(n,length).add(V((random()-.5)*.014,(random()-.5)*.014,(random()-.5)*.014));
@@ -132,15 +133,15 @@ export function createSheepModel() {
   fleece(fringe,'Forehead_side',[.1,.1,.06],7,false,.12,[.12,.76,.5]);
 
   function sculptLimb(parent,name,points,radii){
-    const geo=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),40,1,24,false);
+    const geo=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),24,1,12,false);
     const mesh=new THREE.Mesh(geo,skin);mesh.name=name;mesh.castShadow=mesh.receiveShadow=true;parent.add(mesh);
     mesh.updateShape=newPoints=>{
-      const path=new THREE.CatmullRomCurve3(newPoints.map(p=>new THREE.Vector3(...p))),frames=path.computeFrenetFrames(40,false),pos=geo.attributes.position;
-      for(let i=0;i<=40;i++){
-        const t=i/40,p=path.getPointAt(t),f=t*(radii.length-1),k=Math.min(radii.length-2,Math.floor(f)),alpha=f-k,r=THREE.MathUtils.lerp(radii[k],radii[k+1],alpha*alpha*(3-2*alpha));
-        for(let j=0;j<=24;j++){
-          const a=j/24*Math.PI*2,delta=frames.normals[i].clone().multiplyScalar(-Math.cos(a)*r).addScaledVector(frames.binormals[i],Math.sin(a)*r*.92);
-          pos.setXYZ(i*25+j,p.x+delta.x,p.y+delta.y,p.z+delta.z);
+      const path=new THREE.CatmullRomCurve3(newPoints.map(p=>new THREE.Vector3(...p))),frames=path.computeFrenetFrames(24,false),pos=geo.attributes.position;
+      for(let i=0;i<=24;i++){
+        const t=i/24,p=path.getPointAt(t),f=t*(radii.length-1),k=Math.min(radii.length-2,Math.floor(f)),alpha=f-k,r=THREE.MathUtils.lerp(radii[k],radii[k+1],alpha*alpha*(3-2*alpha));
+        for(let j=0;j<=12;j++){
+          const a=j/12*Math.PI*2,delta=frames.normals[i].clone().multiplyScalar(-Math.cos(a)*r).addScaledVector(frames.binormals[i],Math.sin(a)*r*.92);
+          pos.setXYZ(i*13+j,p.x+delta.x,p.y+delta.y,p.z+delta.z);
         }
       }
       pos.needsUpdate=true;geo.computeVertexNormals();geo.computeBoundingSphere();

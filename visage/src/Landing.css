@@ -1160,3 +1160,5 @@
     grid-template-columns: 44px 1fr;
   }
 }
+
+.lp-stage[data-ready="false"] .presence { opacity: 0; pointer-events: none; }

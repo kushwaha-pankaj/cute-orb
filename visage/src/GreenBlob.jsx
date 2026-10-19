@@ -1,3 +1,4 @@
+import {createRenderLoop, renderPixelRatio} from './renderLoop';
 import {useEffect, useRef} from 'react';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -214,13 +215,12 @@ function setPartToggle(root, names, visible) {
  */
 export default function GreenBlob({config, onError, onReady, pointer}) {
   const host = useRef(null);
-  const live = useRef({config, pointer});
-  live.current = {config, pointer};
+  const live = useRef({config, pointer, onError, onReady});
+  live.current = {config, pointer, onError, onReady};
 
   useEffect(() => {
     let renderer;
     let dead = false;
-    let frame = 0;
     let pmrem = null;
     let envTex = null;
     const el = host.current;
@@ -234,11 +234,11 @@ export default function GreenBlob({config, onError, onReady, pointer}) {
         stencil: false,
       });
     } catch {
-      onError?.('WebGL is unavailable. Please enable hardware acceleration.');
+      live.current.onError?.('WebGL is unavailable. Please enable hardware acceleration.');
       return undefined;
     }
 
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setPixelRatio(renderPixelRatio(el.clientWidth, el.clientHeight));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     // Neutral keeps the clay's green saturated; ACES washed it out to mint.
     renderer.toneMapping = THREE.NeutralToneMapping;
@@ -315,6 +315,7 @@ export default function GreenBlob({config, onError, onReady, pointer}) {
     fx.add(smileArc, oMouth, lidL, lidR);
 
     let mascot = null;
+    let readyInfo = null;
     let morphMeshes = [];
     let parts = {};
     let lastBodyColor = '';
@@ -419,7 +420,7 @@ export default function GreenBlob({config, onError, onReady, pointer}) {
         lidR.rotation.set(0.08, 0, -0.1);
 
         root.add(mascot);
-        onReady?.({
+        readyInfo = {
           meshes: (() => {
             const names = [];
             mascot.traverse((o) => {
@@ -428,15 +429,16 @@ export default function GreenBlob({config, onError, onReady, pointer}) {
             return names;
           })(),
           morphs: morphMeshes[0] ? Object.keys(morphMeshes[0].morphTargetDictionary || {}) : [],
-        });
+        };
       },
       undefined,
-      () => onError?.('Could not load the green blob model.'),
+      () => live.current.onError?.('Could not load the green blob model.'),
     );
 
     const resize = () => {
       const w = el.clientWidth;
       const h = Math.max(1, el.clientHeight);
+      renderer.setPixelRatio(renderPixelRatio(w, h));
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
@@ -445,12 +447,8 @@ export default function GreenBlob({config, onError, onReady, pointer}) {
     ro.observe(el);
     resize();
 
-    const clock = new THREE.Clock();
 
-    function animate() {
-      frame = requestAnimationFrame(animate);
-      const dt = Math.min(0.05, clock.getDelta());
-      const t = clock.elapsedTime;
+    function animate(now, dt, t) {
       const c = live.current.config;
       const motion = c.motion ? 1 : 0;
 
@@ -593,12 +591,16 @@ export default function GreenBlob({config, onError, onReady, pointer}) {
 
       controls.update();
       renderer.render(scene, camera);
+      if(readyInfo){live.current.onReady?.(readyInfo);readyInfo=null;}
     }
-    animate();
+    const stopLoop = createRenderLoop(el, animate);
 
+    const lost = event => {event.preventDefault();live.current.onError?.('The graphics context was interrupted. Reload to restore the preview.');};
+    renderer.domElement.addEventListener('webglcontextlost',lost);
     return () => {
+      renderer.domElement.removeEventListener('webglcontextlost',lost);
       dead = true;
-      cancelAnimationFrame(frame);
+      stopLoop();
       ro.disconnect();
       controls.dispose();
       envTex?.dispose?.();
@@ -613,7 +615,7 @@ export default function GreenBlob({config, onError, onReady, pointer}) {
       renderer.dispose();
       el.replaceChildren();
     };
-  }, [onError, onReady]);
+  }, []);
 
   return <div className="presence green-blob-stage" ref={host} />;
 }
