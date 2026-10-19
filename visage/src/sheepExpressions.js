@@ -2,7 +2,7 @@
 export const SHEEP_EXPRESSIONS = {
   sassy: {label:'Sassy', icon:'✦', eyes:.47, smile:.65, lookX:.6, lookY:.15, tilt:.19, brow:-.15},
   neutral: {label:'Neutral', icon:'◌', eyes:.8, smile:.12},
-  happy: {label:'Happy', icon:'☺', eyes:.68, smile:1, mouth:.18, tilt:.08},
+  happy: {label:'Happy', icon:'☺', eyes:.78, smile:1, mouth:.3, tilt:.08},
   joyful: {label:'Joyful', icon:'✺', eyes:.22, smile:1, mouth:.7, bounce:.1},
   loving: {label:'Loving', icon:'♡', eyes:.55, smile:.8, tilt:.17, blush:1},
   curious: {label:'Curious', icon:'⌕', eyes:.95, smile:.22, tilt:.22, brow:.4, lookX:.25},

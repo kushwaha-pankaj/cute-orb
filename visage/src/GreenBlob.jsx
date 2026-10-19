@@ -190,8 +190,8 @@ function makeOMouthMesh() {
     opacity: 0,
     depthWrite: false,
   });
+  // TorusGeometry already faces +Z (towards the camera); tipping it flat showed only a black bar.
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.rotation.x = Math.PI / 2;
   mesh.renderOrder = 3;
   mesh.userData.fadeMats = [mat];
   return mesh;
@@ -240,7 +240,8 @@ export default function GreenBlob({config, onError, onReady}) {
 
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    // Neutral keeps the clay's green saturated; ACES washed it out to mint.
+    renderer.toneMapping = THREE.NeutralToneMapping;
     renderer.toneMappingExposure = 1.02;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -265,6 +266,7 @@ export default function GreenBlob({config, onError, onReady}) {
     pmrem = new THREE.PMREMGenerator(renderer);
     envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = envTex;
+    scene.environmentIntensity = 0.5;
 
     const hemi = new THREE.HemisphereLight('#F2FFF2', '#3F8A58', 0.62);
     scene.add(hemi);
@@ -344,6 +346,19 @@ export default function GreenBlob({config, onError, onReady}) {
       mesh.position.copy(tmp).add(offset);
     }
 
+    const surfaceRay = new THREE.Raycaster();
+    function restOnSurface(mesh, surface, lift) {
+      if (!surface || !mascot) return;
+      mascot.updateWorldMatrix(true, true);
+      const from = mascot.localToWorld(mesh.position.clone());
+      from.z += 10;
+      surfaceRay.set(from, new THREE.Vector3(0, 0, -1));
+      const hit = surfaceRay.intersectObject(surface, true)[0];
+      if (!hit) return;
+      const local = mascot.worldToLocal(hit.point.clone());
+      mesh.position.z = local.z + lift;
+    }
+
     const loader = new GLTFLoader();
     loader.load(
       MODEL_URL,
@@ -390,6 +405,10 @@ export default function GreenBlob({config, onError, onReady}) {
         mascot.add(fx);
         placeOverlayAt(smileArc, parts.mouth, new THREE.Vector3(0.015, -0.02, 0.04));
         placeOverlayAt(oMouth, parts.mouth, new THREE.Vector3(0.015, 0.0, 0.045));
+        // The mouth cavity sits behind the body's front surface, so overlays offset from it end up
+        // buried inside the clay once the cavity fades (Smile, Surprised). Rest them on the skin instead.
+        const body = findByName(mascot, 'GEO_Body');
+        for (const overlay of [smileArc, oMouth]) restOnSurface(overlay, body, 0.014);
         placeOverlayAt(lidL, parts.eyeL, new THREE.Vector3(0, -0.01, 0.045));
         placeOverlayAt(lidR, parts.eyeR, new THREE.Vector3(0, -0.01, 0.045));
         smileArc.rotation.set(0.05, 0, 0);

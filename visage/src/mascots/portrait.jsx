@@ -1,19 +1,21 @@
 import Presence from '../Presence';
 import {PORTRAIT_STATES} from './portraitData';
 
-function Renderer({config, audioLevel, speechCue, theme, onError}) {
-  return <Presence config={config} state={config.state} theme={theme} audioLevel={audioLevel} speechCue={speechCue} onError={onError} />;
+// Portrait is a glowing figure: its light-mode rendering washed the orb out to near-invisible,
+// so the stage stays dark in both themes (the floating controls still follow the theme).
+function Renderer({config, audioLevel, speechCue, onError}) {
+  return <Presence config={config} state={config.state} theme="dark" audioLevel={audioLevel} speechCue={speechCue} onError={onError} />;
 }
 
 export default {
-  defaults: {form: 0, size: 1.15, scatter: 0.025, speed: 1, glow: 0.35, sensitivity: 1, scale: 1, tint: '#ffffff', motion: true, state: 'idle'},
+  defaults: {form: 0, size: 1.15, scatter: 0.025, speed: 1, glow: 0.35, sensitivity: 1, scale: 1, tint: '#ffffff', motion: true, release: 0, state: 'idle'},
   storageKey: 'visage-config-v2',
   transient: ['state'],
   Renderer,
   engine: 'WebGL particles',
-  hint: 'Move your cursor to explore · Scroll to release pixel dust',
+  hint: 'Move your cursor to explore',
   // The particle renderer is transparent, so the stage supplies its own surface.
-  surface: theme => (theme === 'dark' ? '#0e0e12' : '#efedf7'),
+  surface: () => '#0e0e12',
   caption: c => PORTRAIT_STATES.find(s => s.id === c.state)?.caption,
   stageAction: {
     label: c => (c.form > 0.5 ? 'Transform to face' : 'Transform to orb'),
@@ -42,6 +44,7 @@ export default {
         {type: 'range', key: 'size', label: 'Particle size', min: 0.6, max: 4},
         {type: 'range', key: 'scatter', label: 'Dispersion', min: 0, max: 1},
         {type: 'range', key: 'glow', label: 'Luminosity', min: 0, max: 1.5},
+        {type: 'range', key: 'release', label: 'Pixel dust', min: 0, max: 1},
         {
           type: 'swatches',
           key: 'tint',

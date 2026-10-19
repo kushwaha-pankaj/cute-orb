@@ -264,6 +264,7 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
               <div>
                 <p className="st-kicker">{meta.material}</p>
                 <h1>{meta.name}</h1>
+                <p className="st-hint">{def.hint}</p>
               </div>
               <IconButton
                 label="Reset to defaults"
@@ -414,12 +415,12 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
         </div>
 
         <div className="st-center">
-          <p className="st-status st-glass" role="status">
-            <i className={`st-dot ${config[stateKey] || ''}`} aria-hidden="true" />
-            <b>{status}</b>
-            {def.caption && <span>{def.caption(config)}</span>}
-          </p>
           <div className="st-toolbar st-glass" role="toolbar" aria-label="Stage">
+            <p className="st-status" role="status">
+              <i className={`st-dot ${config[stateKey] || ''}`} aria-hidden="true" />
+              <b>{status}</b>
+              {def.caption && <span>{def.caption(config)}</span>}
+            </p>
             {'motion' in config && (
               <IconButton label={config.motion ? 'Pause animation' : 'Play animation'} onClick={() => patch('motion', !config.motion)}>
                 {config.motion ? <Pause size={16} /> : <Play size={16} />}
@@ -440,7 +441,6 @@ export default function Studio({meta, def, theme, setTheme, onNotice}) {
                 <Orbit size={14} /> {def.stageAction.label(config)}
               </button>
             )}
-            <span className="st-hint">{def.hint}</span>
             <IconButton label="Hide controls" onClick={() => setClean(true)}>
               <EyeOff size={16} />
             </IconButton>

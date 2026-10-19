@@ -411,7 +411,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   min-height: 0;
 }
@@ -419,10 +419,11 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: 100%;
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: 999px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 14px 0 12px;
+  margin-right: 4px;
+  border-right: 1px solid var(--line);
   font-size: 13px;
 }
 .st-status b {
@@ -494,12 +495,9 @@
   min-height: 36px;
 }
 .st-hint {
-  padding: 0 10px;
+  margin-top: 4px;
   font-size: 12px;
   color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ---------- Mood dock ---------- */
@@ -981,9 +979,6 @@
   .no-rail .st-overlay {
     grid-template-columns: minmax(270px, 300px) minmax(0, 1fr);
   }
-  .st-hint {
-    display: none;
-  }
 }
 
 /* ---------- Phones & tablets: stage on top, controls in a bottom sheet ---------- */
@@ -1013,7 +1008,7 @@
     flex: 0 0 calc(var(--stage) - 78px);
     justify-content: flex-end;
   }
-  .st-center .st-status {
+  .st-status span {
     display: none;
   }
   .st-sheet {

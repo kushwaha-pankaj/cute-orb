@@ -97,14 +97,14 @@ export function createSheepModel() {
   const faceGeo=new THREE.SphereGeometry(1,80,64),fp=faceGeo.attributes.position;
   const pear=y=>1-.13*y;
   for(let i=0;i<fp.count;i++){const y=fp.getY(i);fp.setXYZ(i,fp.getX(i)*pear(y),Math.sign(y)*Math.abs(y)**.88,fp.getZ(i))}faceGeo.computeVertexNormals();
-  const mouthCut={center:{value:new THREE.Vector2(0,-.16)},size:{value:new THREE.Vector2(.1,.001)},open:{value:0}};
+  const mouthCut={center:{value:new THREE.Vector2(0,-.16)},size:{value:new THREE.Vector2(.1,.001)},open:{value:0},bend:{value:0},top:{value:0}};
   const faceSkin=skin.clone();
   faceSkin.onBeforeCompile=shader=>{
-    shader.uniforms.mouthCenter=mouthCut.center;shader.uniforms.mouthSize=mouthCut.size;shader.uniforms.mouthIsOpen=mouthCut.open;
+    shader.uniforms.mouthCenter=mouthCut.center;shader.uniforms.mouthSize=mouthCut.size;shader.uniforms.mouthIsOpen=mouthCut.open;shader.uniforms.mouthBend=mouthCut.bend;shader.uniforms.mouthTop=mouthCut.top;
     shader.vertexShader='varying vec3 facePoint;\n'+shader.vertexShader;
     shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nfacePoint=position;');
-    shader.fragmentShader='varying vec3 facePoint; uniform vec2 mouthCenter; uniform vec2 mouthSize; uniform float mouthIsOpen;\n'+shader.fragmentShader;
-    shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(mouthIsOpen>0.5 && facePoint.z>0.0 && length((facePoint.xy-mouthCenter)/mouthSize)<1.0) discard;');
+    shader.fragmentShader='varying vec3 facePoint; uniform vec2 mouthCenter; uniform vec2 mouthSize; uniform float mouthIsOpen; uniform float mouthBend; uniform float mouthTop;\n'+shader.fragmentShader;
+    shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nvec2 mq=(facePoint.xy-mouthCenter)/mouthSize;mq.y-=mouthBend*mq.x*mq.x;if(mq.y>0.0)mq.y*=1.0+mouthTop;if(mouthIsOpen>0.5 && facePoint.z>0.0 && length(mq)<1.0) discard;');
   };
   const face=new THREE.Mesh(faceGeo,faceSkin);face.name='Sculpted_cheeks_and_jaw';face.position.copy(facePosition);face.scale.copy(faceScale);face.castShadow=face.receiveShadow=true;head.add(face);
   function faceZ(x,y){const yy=(y-facePosition.y)/faceScale.y,sy=Math.sign(yy)*Math.abs(yy)**(1/.88),xx=x/(faceScale.x*pear(sy));return facePosition.z+faceScale.z*Math.sqrt(Math.max(.015,1-xx*xx-sy*sy))}
@@ -233,8 +233,8 @@ export function createSheepModel() {
     blushMat.opacity=.65+s.blush*.6;
     for(const eye of eyes){
       const {side,center,mesh}=eye;const open=clamp((s.eyes+(side>0?s.asymmetric*.22:0))*(1-s.blink)*(side<0?1-s.wink:1),0,1.15);
-      const top=.004+open*.095,bottom=.003+open*.125,slant=side*(-.025-s.brow*.05);
-      function edge(u,upper){const xx=(u-.5)*.43,arc=Math.sqrt(Math.max(0,1-(2*u-1)**2)),yy=center.y+xx*slant+(upper?arc*top:-arc*bottom);return V(center.x+xx,yy,faceZ(center.x+xx,yy)+.007+arc*.009)}
+      const happy=clamp((s.smile-.35)/.65,0,1),top=.004+open*.095*(1+happy*.3),squint=happy*(1-Math.min(open,1)*.75),bottom=(.003+open*.125)*(1-squint*.9),lift=Math.min(top*.7,squint*.05),slant=side*(-.025-s.brow*.05)*(1-happy*.6);
+      function edge(u,upper){const xx=(u-.5)*.43,arc=Math.sqrt(Math.max(0,1-(2*u-1)**2)),yy=center.y+xx*slant+(upper?arc*top:arc*(lift-bottom));return V(center.x+xx,yy,faceZ(center.x+xx,yy)+.007+arc*.009)}
       const pos=mesh.geometry.attributes.position,uv=mesh.geometry.attributes.uv;
       for(let iy=0;iy<=20;iy++)for(let ix=0;ix<=48;ix++){
         const u=ix/48,v=iy/20,a=edge(u,true),b=edge(u,false),p=a.lerp(b,v);p.z+=Math.sin(u*Math.PI)*Math.sin(v*Math.PI)*.012;
@@ -244,19 +244,21 @@ export function createSheepModel() {
       eye.upper.update(u=>{const p=edge(u,true);p.y+=.009;p.z=faceZ(p.x,p.y)+.003;return p},u=>.001+Math.sin(u*Math.PI)*.011);
       eye.lower.visible=false;eye.lower.update(u=>{const p=edge(u,false);p.y-=.004;p.z=faceZ(p.x,p.y)+.003;return p},u=>.0005+Math.sin(u*Math.PI)*.005);
       eye.lash.update(u=>edge(u,true).add(V(0,-.002,.010)),u=>.0007+Math.sin(u*Math.PI)*.0055);
-      eye.brow.visible=Math.abs(s.brow)>.25;eye.brow.update(u=>{const xx=(u-.5)*.3,yy=center.y+.17+Math.sin(u*Math.PI)*.018+side*xx*s.brow*.28;return V(center.x+xx,yy,faceZ(center.x+xx,yy)+.013)});
+      eye.brow.visible=Math.abs(s.brow)>.25;eye.brow.update(u=>{const xx=(u-.5)*.3,yy=center.y+.17+Math.sin(u*Math.PI)*.018-side*xx*s.brow*.28+Math.max(0,s.brow)*.025+Math.min(0,s.brow)*.012;return V(center.x+xx,yy,faceZ(center.x+xx,yy)+.013)});
       const gx=center.x+s.lookX*.15-.015,gy=center.y+.017+s.lookY*.018;eye.glint.scale.set(.006,.007,.003);eye.glint.position.set(gx,gy,faceZ(gx,gy)+.027);eye.glint.visible=open>.63;
     }
-    const open=clamp(s.mouth,0,1),width=.09+(1-s.round)*.055;
+    const open=clamp(s.mouth,0,1),width=.09+(1-s.round)*.055+Math.max(0,s.smile)*(1-s.round)*.03;
     const mouthY=-.29-open*.028,mouthHeight=.007+open*.105;
     const localY=(mouthY-facePosition.y)/faceScale.y;
     mouthCut.center.value.set(0,Math.sign(localY)*Math.abs(localY)**(1/.88));
     mouthCut.size.value.set(width/faceScale.x,mouthHeight/faceScale.y);
     mouthCut.open.value=open>.035?1:0;
     mouthRim.visible=open>.035;
-    mouthRim.update(u=>{const a=u*Math.PI*2,xx=Math.cos(a)*width,yy=mouthY+Math.sin(a)*mouthHeight;return V(xx,yy,faceZ(xx,yy)+.006)});
+    const bend=clamp(s.smile,-1,1)*(1-s.round)*.7,topFlat=Math.max(0,s.smile)*(1-s.round)*.7;
+    mouthCut.bend.value=bend;mouthCut.top.value=topFlat;
+    mouthRim.update(u=>{const a=u*Math.PI*2,c=Math.cos(a),t=Math.sin(a),xx=c*width,yy=mouthY+((t>0?t/(1+topFlat):t)+bend*c*c)*mouthHeight;return V(xx,yy,faceZ(xx,yy)+.006)});
     philtrum.update(u=>{const y=THREE.MathUtils.lerp(-.155,open>.035?Math.max(-.22,mouthY+mouthHeight+.004):-.22,u),x=Math.sin(u*Math.PI)*.008;return V(x,y,faceZ(x,y)+.005)},u=>.002+Math.sin(u*Math.PI)*.0015);
-    mouth.visible=open>.035;mouth.scale.set(width*1.08,mouthHeight*1.12,.09);mouth.position.y=-.29-open*.028;mouth.position.z=faceZ(0,mouth.position.y)-.025;
+    mouth.visible=open>.035;mouth.scale.set(width*1.08,mouthHeight*1.12*(1+Math.abs(bend)),.09);mouth.position.y=mouthY+bend*mouthHeight*.5;mouth.position.z=faceZ(0,mouth.position.y)-.025;
     tongue.visible=open>.16||s.tongue>.1;tongue.scale.set(width*.62,.012+open*.025+s.tongue*.018,.018);tongue.position.y=-.3-open*.08;tongue.position.z=faceZ(0,tongue.position.y)-.018;
     teeth.visible=open>.35&&s.smile>.5;
     smiles.forEach((stroke,i)=>{
@@ -264,7 +266,8 @@ export function createSheepModel() {
       const side=i?1:-1,width=i?.205:.132;
       // The original has a small left hook and a longer, gently upturned right smile.
       stroke.update(u=>{
-        const x=side*width*u,depth=i?.038:.041,corner=(i?.01:-.01)+s.smile*(i?.022:.012);
+        const curve=clamp(.3+.85*s.smile,-.75,1.15);
+        const x=side*width*u,depth=(i?.038:.041)*curve,corner=(i?.01:-.01)+s.smile*(i?.022:.012);
         const y=-.22-Math.sin(u*Math.PI)*depth+u*corner;
         return V(x,y,faceZ(x,y)+.004);
       },u=>.0015+Math.sin(u*Math.PI)*.0035);
