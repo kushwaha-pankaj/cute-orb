@@ -66,7 +66,7 @@ test('the initial hero uses a small transparent preview matching its live pose',
   const {createServer} = await import('vite');
   const {createElement} = await import('react');
   const {renderToStaticMarkup} = await import('react-dom/server');
-  const server = await createServer({server:{middlewareMode:true,watch:null},appType:'custom'});
+  const server = await createServer({server:{middlewareMode:true,watch:null,ws:false},appType:'custom'});
   try {
     const {featured} = await server.ssrLoadModule('/src/mascots/index.js');
     const {heroSettings} = await server.ssrLoadModule('/src/heroSettings.js');

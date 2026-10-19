@@ -36,6 +36,7 @@ test('generated examples compile and contain portable branded URLs for every mas
   const api = await integration({DEV: true});
   for (const mascot of [
     {id: 'mallow', name: 'Mallow', states: ['idle', 'listening', 'thinking', 'speaking'], expressions: ['happy']},
+    {id: 'tofu', name: 'Tofu', states: ['idle', 'listening', 'thinking', 'speaking'], expressions: ['neutral', 'happy']},
     {id: 'blob', name: 'Green Blob', states: [], expressions: ['happy']},
     {id: 'portrait', name: 'Portrait', states: ['idle', 'speaking'], expressions: []},
   ]) {

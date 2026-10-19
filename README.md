@@ -30,6 +30,7 @@ Give your app a character that listens, thinks, speaks or reacts to your own eve
 | Character | Rendering | Controls |
 | --- | --- | --- |
 | Mallow | Procedural wool sheep | Expressions, poses, assistant states, visemes and PNG capture |
+| Tofu | Procedural soft vinyl companion | Colours, head and body proportions, dot eyes, moods, poses, assistant states and PNG capture |
 | Green Blob | Clay-style glTF character | Expressions, appearance and individual body parts |
 | Portrait | Particle face that transforms into an orb | Assistant states, audio levels and particle appearance |
 

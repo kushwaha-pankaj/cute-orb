@@ -13,10 +13,11 @@
  script.src = host + '/mascotty.js';
  script.onerror = () => result.textContent = 'FAIL: loader unavailable';
  script.onload = () => {
+   const cast = ['mallow', 'tofu', 'blob', 'portrait'];
    const ready = new Set();
    const instances = new Map();
-   const show = () => result.textContent = ready.size === 3 ? 'PASS: all three characters ready; early commands queued and flushed.' : 'Ready: ' + [...ready].join(', ');
-   for (const id of ['mallow', 'blob', 'portrait']) {
+   const show = () => result.textContent = ready.size === cast.length ? 'PASS: all characters ready; early commands queued and flushed.' : 'Ready: ' + [...ready].join(', ');
+   for (const id of cast) {
      const element = document.createElement('div'); element.className = 'mascot'; element.id = id;
      document.querySelector('#cast').appendChild(element);
      const mascot = Mascotty.mount(element, {mascot: id, background: 'transparent'});
@@ -24,7 +25,7 @@
      mascot.set({motion: false, follow: false});
      if (id !== 'blob') mascot.setState('thinking');
      else mascot.setExpression('happy');
-     mascot.on('ready', info => { ready.add(info.mascot); show(); document.querySelector('#lifecycle').disabled = ready.size !== 3; });
+     mascot.on('ready', info => { ready.add(info.mascot); show(); document.querySelector('#lifecycle').disabled = ready.size !== cast.length; });
      mascot.on('error', message => { if (!message.startsWith('Unknown state')) result.textContent = 'FAIL: ' + id + ': ' + message; });
    }
    document.querySelector('#lifecycle').onclick = () => {
@@ -43,7 +44,7 @@
          invalid.on('error', message => {
            if (!message.startsWith('Unknown mascot')) { result.textContent = 'FAIL: unexpected error: ' + message; return; }
            invalid.destroy(); invalidHost.remove();
-           result.textContent = 'PASS: all three iframe characters, queued commands, validated errors, destroy/remount and unknown-character reporting.';
+           result.textContent = 'PASS: all iframe characters, queued commands, validated errors, destroy/remount and unknown-character reporting.';
          });
        });
      });

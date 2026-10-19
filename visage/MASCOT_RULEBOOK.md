@@ -309,6 +309,8 @@ Run `npm run dev`, open `#studio/<id>`, and tick every box.
 
 | What went wrong | Mascot | Rule |
 |---|---|---|
+| Disposing materials during parallel shader compilation broke rapid character switches | Tofu | Remove the canvas and listeners immediately, then dispose GPU resources after compilation settles |
+| Raised arm rotated inside the oversized head and disappeared | Tofu | Check every pose against the head at its largest proportions; move the wave slightly forward and keep it beside the cheek |
 | Callback identity recreated the scene; scrolling rebuilt the hero and hidden scenes kept drawing | All | R3.2; use live callback refs and visibility-aware render loops |
 | Hero used a studio still with a different pose, backdrop and crop, causing a visible image swap | Mallow | Capture the actual transparent hero scene; match its vertical framing and paint the poster before WebGL initialisation |
 | First frame showed undeformed features over the loading poster | Mallow | Initialise pose and face before rendering; reveal the canvas after the first completed frame |

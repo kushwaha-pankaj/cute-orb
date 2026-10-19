@@ -7,6 +7,7 @@
  */
 import {SHEEP_EXPRESSIONS, SHEEP_STATES, SHEEP_POSES} from '../sheepExpressions';
 import {SHEET_EXPRESSIONS} from '../blobExpressions';
+import {TOFU_EXPRESSIONS, TOFU_STATES, TOFU_POSES} from '../tofuExpressions';
 import {PORTRAIT_STATES} from './portraitData';
 
 const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -45,6 +46,34 @@ mallow.setViseme('O');
 mallow.setAudioLevel(0.6);`,
     },
     load: () => import('./mallow'),
+  },
+  {
+    id: 'tofu',
+    name: 'Tofu',
+    material: 'Soft vinyl',
+    tagline: 'A quiet little companion. Rounded edges, dot eyes, and room to make it yours.',
+    image: 'tofu.webp',
+    imageAlt: 'Tofu, an ivory 3D companion with a large rounded head and tiny dot eyes',
+    tint: '#f5ece2',
+    states: TOFU_STATES,
+    expressions: Object.keys(TOFU_EXPRESSIONS),
+    moods: Object.keys(TOFU_EXPRESSIONS).length,
+    fact: [count(Object.keys(TOFU_EXPRESSIONS).length, 'mood'), count(TOFU_STATES.length, 'AI state'), count(TOFU_POSES.length, 'pose')].join(' · '),
+    customization: {
+      description: 'Generated entirely from 3D geometry, with no model download. Neutral preserves the reference’s dot-eye face; expressions and speech reveal a small mouth. Colours, proportions, roughness, gaze and poses update without rebuilding the scene.',
+      example: `const tofu = Mascotty.get('tofu');
+tofu.set({
+  bodyColor: '#afc3ac', eyeColor: '#252620', roughness: 0.7,
+  headWidth: 1.05, headHeight: 0.95, bodyWidth: 1,
+  eyeSize: 1.1, eyeSpacing: 0.9, pose: 'wave'
+});
+tofu.setExpression('happy');
+tofu.setState('listening');
+// Keep the reference's quiet face:
+// tofu.setExpression('neutral');
+// tofu.set({showMouth: false, pose: 'stand'});`,
+    },
+    load: () => import('./tofu'),
   },
   {
     id: 'blob',
