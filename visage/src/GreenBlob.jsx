@@ -490,6 +490,11 @@ export default function GreenBlob({config, onError, onReady}) {
       state.eyesW = damp(state.eyesW, wantEyes, 14, dt);
       state.yaw = damp(state.yaw, c.yaw || 0, 8, dt);
       state.scale = damp(state.scale, c.scale || 1, 8, dt);
+      // Optional camera zoom, framed around the orbit target.
+      if (camera.zoom !== (c.zoom || 1)) {
+        camera.zoom = c.zoom || 1;
+        camera.updateProjectionMatrix();
+      }
       state.bob = damp(state.bob, Math.sin(t * (c.bobSpeed || 1.4)) * (c.bobAmount || 0) * motion, 6, dt);
 
       // Morphs (body shape keys) — mouthOpen/blink if present in GLB

@@ -32,8 +32,11 @@ const defaults = applyLook(
   'happy',
 );
 
+// Pull the camera back so the blob sits clear of the floating studio panels.
+const ROOM_ZOOM = 0.66;
+
 function Renderer({config, onReady, onError}) {
-  return <GreenBlob config={config} onReady={onReady} onError={onError} />;
+  return <GreenBlob config={{...config, zoom: ROOM_ZOOM}} onReady={onReady} onError={onError} />;
 }
 
 export default {

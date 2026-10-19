@@ -11,7 +11,8 @@ function Renderer({config, audioLevel, onReady, onError, controlRef}) {
 }
 
 export default {
-  defaults: SHEEP_DEFAULTS,
+  // Pulled back a little so Mallow sits clear of the floating panels.
+  defaults: {...SHEEP_DEFAULTS, zoom: 0.82},
   storageKey: 'visage-mallow-v1',
   transient: ['state', 'viseme', 'mouthOpen'],
   Renderer,
