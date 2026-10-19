@@ -1,6 +1,6 @@
-# Mallow — Experiment 003
+# Mallow
 
-Run `npm run dev` in `visage`, then choose **003 Mallow**. Production output: `npm run build`.
+Run `npm run dev` in `visage`, then open `#studio/mallow`. Production output: `npm run build`.
 
 The reference is interpreted as a procedural, fully orbitable 3D sheep. This is not a pixel-identical reconstruction of the photograph. No Blender install or generated bitmap is needed at runtime. The reference image is shown only in the Studio panel.
 
@@ -9,7 +9,7 @@ The reference is interpreted as a procedural, fully orbitable 3D sheep. This is 
 - `src/SheepMascot.jsx`: Three.js scene, studio lighting, camera, expression blending, secondary motion and cleanup.
 - `src/SheepModel.js`: sculpted procedural anatomy, instanced fleece, fine fibres, volumetric face parts and reusable mesh deformation.
 - `src/sheepExpressions.js`: 24 blendable expression presets, seven AI states and defaults.
-- `src/SheepStudio.jsx`: React controls, browser speech, microphone RMS analysis, capture and configuration export, public controller.
+- `src/mascots/mallow.jsx`: Mallow's studio definition (controls, states, moods, voice line and the `window.mallow` controller), rendered by the shared studio in `src/studio/`.
 
 ## React integration
 
@@ -32,7 +32,7 @@ Include the `.presence` / `.sheep-canvas` positioning rules from `style.css`, or
 
 ## Controller
 
-The playground exposes `window.mallow` only while Experiment 003 is mounted:
+The playground exposes `window.mallow` only while the Mallow studio is open:
 
 ```js
 mallow.setState('listening');

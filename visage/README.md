@@ -28,6 +28,8 @@ Production: `npm run build` then `npm run preview`.
 
 ## Adding a mascot
 
+Read **[MASCOT_RULEBOOK.md](MASCOT_RULEBOOK.md)** first: it has the rules, the mistakes we already made, a pre-merge checklist and a starter template. The short version:
+
 1. Put a still in `public/images/` (a clean render on a flat backdrop works best).
 2. Write `src/mascots/<id>.jsx` that exports a definition. At minimum:
 
