@@ -8,6 +8,7 @@
 import {SHEEP_EXPRESSIONS, SHEEP_STATES, SHEEP_POSES} from '../sheepExpressions';
 import {SHEET_EXPRESSIONS} from '../blobExpressions';
 import {TOFU_EXPRESSIONS, TOFU_STATES, TOFU_POSES} from '../tofuExpressions';
+import {LUMA_EXPRESSIONS, LUMA_STATES, LUMA_POSES} from '../lumaExpressions';
 import {PORTRAIT_STATES} from './portraitData';
 
 const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -75,6 +76,15 @@ tofu.setState('listening');
 // tofu.set({showMouth: false, pose: 'stand'});`,
     },
     load: () => import('./tofu'),
+  },
+  {
+    id: 'luma', name: 'Luma', material: 'Lavender soft vinyl',
+    tagline: 'A little light in your day. Big curious eyes, soft mittens, and a friendly wave.',
+    image: 'luma.png', imageAlt: 'Luma, a lavender companion with a cream face, glossy oval eyes and a round antenna',
+    tint: '#fcf8f2', states: LUMA_STATES, expressions: Object.keys(LUMA_EXPRESSIONS),
+    moods: Object.keys(LUMA_EXPRESSIONS).length,
+    fact: [count(Object.keys(LUMA_EXPRESSIONS).length, 'mood'), count(LUMA_STATES.length, 'AI state'), count(LUMA_POSES.length, 'pose')].join(' · '),
+    load: () => import('./luma'),
   },
   {
     id: 'blob',

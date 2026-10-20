@@ -2,6 +2,7 @@ import {docsHref} from '../docs/navigation';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Camera,
+  ChevronDown,
   Check,
   Copy,
   Download,
@@ -80,6 +81,18 @@ export function StudioTopBar({meta, theme, setTheme, children}) {
             </a>
           ))}
         </nav>
+        <div className="st-character-select st-glass">
+          <img src={asset(meta.image)} alt="" width="26" height="26" style={{background: meta.tint}} />
+          <span>{meta.name}</span>
+          <ChevronDown size={15} aria-hidden="true" />
+          <select
+            aria-label="Choose a character"
+            value={meta.id}
+            onChange={event => { window.location.hash = `studio/${event.target.value}`; }}
+          >
+            {mascots.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+        </div>
       </div>
       <div className="st-top-end">
         {children}
