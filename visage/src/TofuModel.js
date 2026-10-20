@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {mergeVertices} from 'three/addons/utils/BufferGeometryUtils.js';
 import {TOFU_DEFAULTS, TOFU_EXPRESSIONS} from './tofuExpressions.js';
 
 /** A rounded solid, built once. Every point lies on a smooth Lp sphere. */
@@ -10,6 +11,30 @@ function softGeometry(exponent = .66, segments = 48, rings = 32) {
     position.setXYZ(i, power(position.getX(i)), power(position.getY(i)), power(position.getZ(i)));
   }
   geometry.computeVertexNormals();
+  return geometry;
+}
+
+/** Sculpted hanging arm: a narrow shoulder, curved forearm and round mitten tip.
+ * The profile is sampled once; poses rotate the finished solid at its shoulder.
+ */
+function armGeometry(side) {
+  const profile = new THREE.CatmullRomCurve3([
+    [0, -1.12], [.065, -1.105], [.125, -1.065], [.17, -.995],
+    [.19, -.9], [.188, -.74], [.17, -.52], [.14, -.3],
+    [.13, -.12], [.125, .015], [.09, .12], [0, .17],
+  ].map(([radius, y]) => new THREE.Vector3(radius, y, 0)));
+  const points = profile.getPoints(56).map(p => new THREE.Vector2(Math.max(0, p.x), p.y));
+  const lathe = new THREE.LatheGeometry(points, 32);
+  const vertices = lathe.attributes.position;
+  for (let i = 0; i < vertices.count; i++) {
+    const y = vertices.getY(i), t = (.17 - y) / 1.29;
+    // Bow away from the torso, then curl the hand back in towards the hip.
+    const curve = .38 * Math.sin(t * Math.PI * .65);
+    vertices.setXYZ(i, vertices.getX(i) + side * curve, y, vertices.getZ(i) * 1.12 + .055 * t);
+  }
+  // Weld the radial seam and cap vertices before smoothing the bent surface.
+  lathe.deleteAttribute('normal'); lathe.deleteAttribute('uv');
+  const geometry = mergeVertices(lathe); lathe.dispose(); geometry.computeVertexNormals();
   return geometry;
 }
 
@@ -39,9 +64,8 @@ export function createTofuModel() {
   });
   const arms = [-1, 1].map(side => {
     const arm = new THREE.Group(); arm.name = side < 0 ? 'Right arm' : 'Left arm';
-    arm.position.set(side * .73, 1.69, 0); root.add(arm);
-    const limb = mesh('Arm', round, skin, arm, [.21, .61, .25], [side * .1, -.49, .015]);
-    limb.rotation.z = side * .14;
+    arm.position.set(side * .62, 1.78, .015); root.add(arm);
+    mesh('Arm', armGeometry(side), skin, arm, [1, 1, 1], [0, 0, 0]);
     return arm;
   });
   const eyes = [-1, 1].map(side => mesh('Eye', round, ink, head, [.08, .085, .032], [side * .67, -.32, .78]));
@@ -112,11 +136,11 @@ export function createTofuModel() {
     openMouth.scale.set(.085 + Math.max(0, face.smile) * .065, .035 + opening * .14, .024);
     arms.forEach((arm, i) => {
       const side = i ? 1 : -1;
-      arm.position.x = side * .73 * c.bodyWidth;
-      let angle = side * .12;
+      arm.position.x = side * .62 * c.bodyWidth;
+      let angle = 0;
       const waving = c.pose === 'wave' && i === 1;
       if (waving) angle = 1.95 + (c.motion ? Math.sin(t * 5) * .14 : 0);
-      arm.position.z = ease(arm.position.z, waving ? .35 : 0);
+      arm.position.z = ease(arm.position.z, waving ? .35 : .015);
       if (c.pose === 'welcome') angle = side * 1.15;
       if (c.pose === 'dance') angle = side * (.6 + Math.sin(t * 3.5 + i) * .45);
       arm.rotation.z = ease(arm.rotation.z, angle);
