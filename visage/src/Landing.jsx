@@ -1,8 +1,8 @@
 import {docsHref} from './docs/navigation';
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
-import {ArrowUpRight, AudioLines, Bot, Copy, Check, Code2, Globe, Plus, Minus, Plug, Github} from 'lucide-react';
+import {ArrowUpRight, Bot, Copy, Check, Code2, Globe, Plus, Minus, Plug, Github} from 'lucide-react';
 import '@fontsource-variable/urbanist';
-import {mascots, featured, totalMoods} from './mascots';
+import {mascots, featured} from './mascots';
 import {agentPrompt, htmlSnippet, jsSnippet, reactSnippet} from './integration';
 import {repositoryUrl} from './site';
 import './Landing.css';
@@ -26,62 +26,51 @@ function LiveHero({Component, onError}) {
   return <Component onError={onError} />;
 }
 
-const visemes = [
-  {key: 'A', h: 72},
-  {key: 'E', h: 44},
-  {key: 'O', h: 88},
-  {key: 'U', h: 52},
-  {key: 'M', h: 26},
-  {key: 'F', h: 38},
-];
-
-const sessionSteps = [
-  {title: 'Choose', clause: 'Pick a face for your product.', chip: featured.name},
-  {title: 'Shape', clause: 'Dial in gaze, mouth and pose.', chip: 'curious · 0.8'},
-  {title: 'Copy', clause: 'Grab a snippet with your settings in it.', chip: 'Use on your site'},
-  {title: 'Plug in', clause: 'Your app events drive the face.', chip: "setState('speaking')"},
+const heroMoods = featured.heroExpressions || [];
+const integrationTabs = [
+  {id: 'html', label: 'HTML', icon: Globe},
+  {id: 'js', label: 'JavaScript', icon: Code2},
+  {id: 'react', label: 'React', icon: Code2},
+  {id: 'agent', label: 'AI agent', icon: Bot},
 ];
 
 const faqs = [
   {
-    question: 'Is Mascotty an AI assistant?',
-    answer:
-      'Mascotty is a visual character studio. The demos run without an account or API key. You connect your own assistant or app events to drive the controller.',
+    question: 'Is it free for commercial projects?',
+    answer: <>Yes. Mascotty is released under the MIT license. You can use, modify and distribute it in personal or commercial projects. Include the copyright and license notice when distributing copies. <a href={docsHref('license')}>Read the license.</a></>,
   },
   {
-    question: 'What do I need to run it?',
-    answer:
-      'A recent browser with WebGL and hardware acceleration. The detailed characters prefer a desktop GPU. Microphone access requires a secure HTTPS connection.',
-  },
-  {
-    question: 'Where does microphone audio go?',
-    answer:
-      'Levels are measured in your browser to animate the mouth. This app does not record or upload microphone audio. Browser speech may use your browser’s voice service.',
+    question: 'Does Mascotty include an AI assistant?',
+    answer: 'Mascotty provides the animated character and its controls. Your app supplies the assistant, text-to-speech and events. The studio includes browser speech and microphone previews so you can try supported reactions.',
   },
   {
     question: 'How do I add a mascot to my site?',
-    answer:
-      'Open a studio, press “Use on your site” and paste the snippet: one div and one script tag. The mascot runs in its own frame, so it can’t clash with your CSS or JavaScript. There’s a React component too.',
+    answer: <>Customise a character in the studio, select “Use on your site”, and copy the HTML or React example with your settings. The mascot renders inside an iframe. <a href={notes}>Follow the quick start.</a></>,
   },
   {
-    question: 'Can my AI coding agent set it up for me?',
-    answer:
-      'Yes. The studio’s “AI agent” tab gives you a prompt for Claude Code, Cursor or any coding agent. It says where to embed the mascot and how to wire it to your assistant’s listening, thinking and speaking moments.',
+    question: 'What browsers and devices can run it?',
+    answer: 'Use a recent browser with WebGL and hardware acceleration. Performance depends on the character and device; detailed models can be demanding on smaller devices. Motion can be paused, and your app can display a still image as a fallback.',
   },
   {
-    question: 'How does it react to my assistant?',
-    answer:
-      'Call setState with listening, thinking, speaking or idle from your chat code, and setAudioLevel (0 to 1) from your text-to-speech audio. Each mascot reports its own states, expressions and settings when it’s ready.',
+    question: 'Where does microphone audio go?',
+    answer: 'The studio measures audio levels in your browser to animate supported characters. Mascotty does not record or upload microphone audio. The microphone preview needs HTTPS and your permission. Browser speech may use your browser’s voice service.',
+  },
+  {
+    question: 'Do all characters have the same controls?',
+    answer: <>Each character has its own expressions, states and appearance settings. Your app can send supported states such as listening or speaking, and audio levels for speech reactions. <a href={docsHref('characters')}>Compare character capabilities.</a></>,
+  },
+  {
+    question: 'Can I host it myself?',
+    answer: <>Yes. Build the project from source and publish the static files on your own host. You can use the hosted demo to get started or serve your own copy. <a href={docsHref('deployment')}>See the deployment guide.</a></>,
   },
 ];
 
 const nav = [
-  {href: '#home', label: 'Home'},
-  {href: '#cast', label: 'Cast'},
-  {href: '#session', label: 'Session'},
-  {href: '#developers', label: 'Developers'},
+  {href: '#cast', label: 'Characters'},
+  {href: '#developers', label: 'Integration'},
   {href: '#community', label: 'Community'},
   {href: '#ask', label: 'FAQ'},
+  {href: notes, label: 'Docs'},
 ];
 
 export default function Landing({onNotice, notice}) {
@@ -98,7 +87,7 @@ export default function Landing({onNotice, notice}) {
   const [heroReady, setHeroReady] = useState(false);
   const [posterPainted, setPosterPainted] = useState(false);
   const heroPoster = useRef(null);
-  const [openFaq, setOpenFaq] = useState(0);
+  const [heroExpression, setHeroExpression] = useState(featured.heroProps?.expression);
   const [copied, setCopied] = useState(false);
   const [devTab, setDevTab] = useState('html');
   const [menu, setMenu] = useState(false);
@@ -106,6 +95,7 @@ export default function Landing({onNotice, notice}) {
   const stage = useRef(null);
   const footer = useRef(null);
   const [footerNear, setFooterNear] = useState(false);
+  const [footerMarkReady, setFooterMarkReady] = useState(false);
 
   useEffect(() => {
     const image = heroPoster.current;
@@ -143,7 +133,7 @@ export default function Landing({onNotice, notice}) {
 
   useEffect(() => {
     const nodes = root.current?.querySelectorAll('[data-reveal]');
-    if (!nodes?.length) return;
+    if (!nodes?.length || !('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
@@ -155,8 +145,10 @@ export default function Landing({onNotice, notice}) {
       },
       {threshold: 0.12},
     );
+    root.current.classList.add('has-motion');
     nodes.forEach(el => observer.observe(el));
-    return () => observer.disconnect();
+    const page = root.current;
+    return () => { observer.disconnect(); page.classList.remove('has-motion'); };
   }, []);
 
   async function copy(text, key) {
@@ -204,59 +196,54 @@ export default function Landing({onNotice, notice}) {
             ))}
           </nav>
           <div className="lp-header-end">
-            <a className="lp-link" href={notes}>
-              Docs
-            </a>
             <a className="lp-ghost" href={studioHref(featured)}>
-              Enter studio
+              Open studio
             </a>
           </div>
         </header>
+      </div>
 
-        <main id="main-content" tabIndex={-1}>
+      <main id="main-content" tabIndex={-1}>
+        <div className="lp-frame">
           <section className="lp-hero" aria-labelledby="hero-title">
-            <h1 id="hero-title" className="lp-title">
+            <h1 id="hero-title" className="lp-title" aria-label="3D mascots for your website">
               <span className="lp-line one">
-                Soft Faces
+                3D mascots
                 <a className="lp-pill" href={studioHref(sidekick)} aria-label={`Open ${sidekick.name}`} style={{background: sidekick.tint}}>
                   <img src={asset(sidekick.image)} alt="" width="736" height="736" />
                 </a>
               </span>
               <span className="lp-line two">
-                <span className="lp-for">for sharp</span>
-                Systems
+                <span className="lp-for">for your</span>
+                website
               </span>
             </h1>
 
-            <div className="lp-stage" data-ready={heroReady} ref={stage} aria-hidden={!hero3D}>
+            <div className="lp-stage" data-ready={heroReady} ref={stage}>
               <div className="lp-glow" />
               <img ref={heroPoster} aria-hidden={heroReady} className="lp-stage-still" src={asset(featured.heroPoster || featured.image)} alt={featured.heroPosterAlt || featured.imageAlt} fetchPriority="high" width="768" height="768" />
               {Hero && hero3D && heroVisible && posterPainted ? (
                 <Suspense fallback={null}>
-                  <Hero {...featured.heroProps} onReady={() => setHeroReady(true)} onError={() => {setHero3D(false);setHeroReady(false)}} />
+                  <Hero {...featured.heroProps} expression={heroExpression} onReady={() => setHeroReady(true)} onError={() => {setHero3D(false);setHeroReady(false)}} />
                 </Suspense>
               ) : null}
             </div>
 
             <p className="lp-lede">
-              Expressive 3D characters for your assistant or app. Pick a face, give it a mood, and let your
-              own events make it listen, think and speak.
+              Free, open-source characters for websites and apps. Customise a mascot, copy an embed, and connect it to your app’s events.
             </p>
 
-            <figure className="lp-widget" aria-label={`Lip sync visemes ${featured.name} can show`}>
-              <figcaption>Lip sync</figcaption>
-              <div className="lp-bars">
-                {visemes.map((v, i) => (
-                  <div key={v.key} className="lp-bar">
-                    <span className={i % 3 === 2 ? 'blue' : ''} style={{'--h': `${v.h}%`, '--d': `${i * 0.18}s`}} />
-                    <small>{v.key}</small>
-                  </div>
-                ))}
+            <div className="lp-widget">
+              <p>Try an expression</p>
+              <div className="lp-mood-buttons" role="group" aria-label={`${featured.name} preview expressions`}>
+                {heroMoods.map(mood => <button key={mood.id} type="button" disabled={!heroReady || !hero3D}
+                  aria-pressed={heroExpression === mood.id} onClick={() => setHeroExpression(mood.id)}>{mood.label}</button>)}
               </div>
-            </figure>
+              <a className="lp-link" href={studioHref(featured)}>Explore {featured.name}’s controls <ArrowUpRight size={14} /></a>
+            </div>
 
             <a className="lp-cta" href={studioHref(featured)}>
-              Get started
+              Open studio
             </a>
           </section>
 
@@ -268,9 +255,9 @@ export default function Landing({onNotice, notice}) {
               <div className="lp-card-body">
                 <p className="lp-score">
                   <strong>
-                    {mascots.length} {mascots.length === 1 ? 'face' : 'faces'}
+                    {mascots.length} {mascots.length === 1 ? 'character' : 'characters'}
                   </strong>
-                  <span>ready to drive</span>
+                  <span>to customise</span>
                 </p>
                 <ul className="lp-people">
                   {mascots.slice(0, PEOPLE_LIMIT).map(item => (
@@ -297,23 +284,21 @@ export default function Landing({onNotice, notice}) {
             </article>
 
             <article className="lp-card lilac" data-reveal>
-              <span className="lp-icon" aria-hidden="true">
-                <AudioLines size={22} />
-              </span>
-              <p>Moods &amp; states across the cast</p>
-              <strong className="lp-big">{totalMoods}</strong>
-              <a className="lp-ghost small" href={notes}>
-                Developer docs <ArrowUpRight size={15} />
+              <p>Free &amp; open source</p>
+              <strong className="lp-big">MIT</strong>
+              <p>Use it in personal or commercial projects.</p>
+              <a className="lp-ghost small" href={docsHref('license')}>
+                Read the license <ArrowUpRight size={15} />
               </a>
             </article>
           </section>
-        </main>
-      </div>
+        </div>
 
       <section className="lp-section" id="cast" aria-labelledby="cast-title">
         <div className="lp-head" data-reveal>
-          <p className="lp-kicker">The cast</p>
-          <h2 id="cast-title">{say(mascots.length)} faces, one studio</h2>
+          <p className="lp-kicker">The characters</p>
+          <h2 id="cast-title">Choose your character</h2>
+          <p className="lp-sub">{say(mascots.length)} characters, each with its own look and controls. <a href={docsHref('characters')}>Compare capabilities.</a></p>
         </div>
         <div className="lp-cast">
           {mascots.map((item, index) => (
@@ -360,28 +345,13 @@ export default function Landing({onNotice, notice}) {
         </div>
       </section>
 
-      <section className="lp-section" id="session" aria-labelledby="session-title">
-        <div className="lp-head" data-reveal>
-          <p className="lp-kicker">A session</p>
-          <h2 id="session-title">From a blank face to a live one</h2>
-        </div>
-        <ol className="lp-steps">
-          {sessionSteps.map((step, index) => (
-            <li key={step.title} className={`lp-step t${index}`} data-reveal style={{'--delay': `${index * 70}ms`}}>
-              <span className="lp-step-n">0{index + 1}</span>
-              <h3>{step.title}</h3>
-              <p>{step.clause}</p>
-              <code>{step.chip}</code>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <div id="session" aria-hidden="true" />
 
       <section className="lp-section lp-dev" id="developers" aria-labelledby="dev-title">
         <div className="lp-head" data-reveal>
           <p className="lp-kicker">For developers</p>
-          <h2 id="dev-title">Put a face on your product in three steps</h2>
-          <p className="lp-sub">One script tag, no build step, no account. Or hand it to your AI coding agent.</p>
+          <h2 id="dev-title">Add a mascot to your site</h2>
+          <p className="lp-sub">Start with an HTML embed or React component. No account is needed to try the studio.</p>
         </div>
         <div className="lp-dev-grid">
           <ol className="lp-dev-steps">
@@ -389,9 +359,9 @@ export default function Landing({onNotice, notice}) {
               <span className="lp-dev-n">1</span>
               <div>
                 <h3>Customise</h3>
-                <p>Open a studio, pick a mascot and tune its look, mood and motion. Your changes save as you go.</p>
+                <p>Choose a character and adjust its supported settings. The studio saves your changes in this browser.</p>
                 <a className="lp-link" href={studioHref(featured)}>
-                  Open the studio <ArrowUpRight size={15} />
+                  Open studio <ArrowUpRight size={15} />
                 </a>
               </div>
             </li>
@@ -408,10 +378,9 @@ export default function Landing({onNotice, notice}) {
             <li className="lp-dev-step" data-reveal style={{'--delay': '140ms'}}>
               <span className="lp-dev-n">3</span>
               <div>
-                <h3>Wire it to your assistant</h3>
+                <h3>Connect your events</h3>
                 <p>
-                  Call <code>setState</code> as your assistant listens, thinks and speaks. Or paste the AI-agent prompt and let your
-                  coding agent do the wiring.
+                  Send the states and expressions your character supports. Connect audio levels for speech reactions, or use the generated prompt with your coding agent.
                 </p>
                 <button type="button" className="lp-link" onClick={() => copy(agentPrompt(featured), 'agent-quick')}>
                   {copied === 'agent-quick' ? 'Prompt copied' : 'Copy the AI-agent prompt'} <Bot size={15} />
@@ -422,14 +391,16 @@ export default function Landing({onNotice, notice}) {
 
           <div className="lp-code" data-reveal>
             <div className="lp-code-bar">
-              <div className="lp-code-tabs" role="tablist" aria-label="Integration code">
-                {[
-                  {id: 'html', label: 'HTML', icon: Globe},
-                  {id: 'js', label: 'JavaScript', icon: Code2},
-                  {id: 'react', label: 'React', icon: Code2},
-                  {id: 'agent', label: 'AI agent', icon: Bot},
-                ].map(t => (
-                  <button key={t.id} id={`dev-tab-${t.id}`} aria-controls="dev-code-panel" type="button" role="tab" aria-selected={devTab === t.id} onClick={() => setDevTab(t.id)}>
+              <div className="lp-code-tabs" role="tablist" aria-label="Integration code" onKeyDown={event => {
+                const current = integrationTabs.findIndex(tab => tab.id === devTab);
+                const next = event.key === 'ArrowRight' ? (current + 1) % integrationTabs.length : event.key === 'ArrowLeft' ? (current + integrationTabs.length - 1) % integrationTabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? integrationTabs.length - 1 : -1;
+                if (next < 0) return;
+                event.preventDefault();
+                setDevTab(integrationTabs[next].id);
+                event.currentTarget.querySelectorAll('[role="tab"]')[next].focus();
+              }}>
+                {integrationTabs.map(t => (
+                  <button key={t.id} id={`dev-tab-${t.id}`} aria-controls="dev-code-panel" type="button" role="tab" tabIndex={devTab === t.id ? 0 : -1} aria-selected={devTab === t.id} onClick={() => setDevTab(t.id)}>
                     <t.icon size={13} /> {t.label}
                   </button>
                 ))}
@@ -448,7 +419,7 @@ export default function Landing({onNotice, notice}) {
               <code>{devCode[devTab]}</code>
             </pre>
             <p className="lp-code-note">
-              <Globe size={14} /> Ready for your website · HTML, React or your AI coding agent.
+              <Globe size={14} /> Example for {featured.name}. Customise your embed in the studio.
               <a href={notes}>Read the integration guide <ArrowUpRight size={14} /></a>
             </p>
           </div>
@@ -457,36 +428,28 @@ export default function Landing({onNotice, notice}) {
 
       <section className="lp-section lp-faq" id="ask" aria-labelledby="faq-title">
         <div className="lp-head" data-reveal>
-          <p className="lp-kicker">Ask away</p>
-          <h2 id="faq-title">Good questions</h2>
-          <p className="lp-sub">No account. No invented AI backend. Just faces you can direct.</p>
+          <p className="lp-kicker">FAQ</p>
+          <h2 id="faq-title">Before you build</h2>
+          <p className="lp-sub">Licensing, setup and what to expect from the characters.</p>
         </div>
         <div className="lp-faq-list" data-reveal>
-          {faqs.map((item, index) => {
-            const open = openFaq === index;
-            return (
-              <div key={item.question} className={`lp-faq-item ${open ? 'is-open' : ''}`}>
-                <button type="button" aria-expanded={open} onClick={() => setOpenFaq(open ? -1 : index)}>
-                  {item.question}
-                  {open ? <Minus size={18} /> : <Plus size={18} />}
-                </button>
-                {open && <p>{item.answer}</p>}
-              </div>
-            );
-          })}
+          {faqs.map(item => <details key={item.question} className="lp-faq-item">
+            <summary>{item.question}<Plus className="lp-faq-plus" size={18} aria-hidden="true" /><Minus className="lp-faq-minus" size={18} aria-hidden="true" /></summary>
+            <p>{item.answer}</p>
+          </details>)}
         </div>
       </section>
 
       <section className="lp-community lp-section" id="community" aria-labelledby="community-title">
         <div className="lp-community-story" data-reveal>
-          <h2 id="community-title">Open source.<br />Shared imagination.</h2>
-          <p>Mascotty is for the community. A place for developers, designers and character makers to build a more expressive web, together.</p>
+          <h2 id="community-title">Open source.<br />Built together.</h2>
+          <p>Mascotty is an open-source project for developers, designers and character makers. Use it in your work and help shape what comes next.</p>
           <img className="lp-community-mark" src={asset('mascotty-logo.webp')} alt="" width="240" height="240" loading="lazy" />
         </div>
         <div className="lp-community-invite" data-reveal>
-          <h3>Your ideas belong here.</h3>
-          <p>Explore the source, help a character find its next expression, or make the integration better for the next developer. Every thoughtful contribution counts.</p>
-          <p className="lp-community-license">MIT licensed. Free to use, change and build on, with attribution.</p>
+          <h3>Help build the next character.</h3>
+          <p>Contribute a character, improve an expression, test an integration or clarify a guide. The contributor documentation explains how to get started.</p>
+          <p className="lp-community-license">MIT licensed. Keep the copyright and license notice when distributing copies.</p>
           <a className="lp-cta" href={repositoryUrl} target="_blank" rel="noreferrer">
             <Github size={19} /> Explore on GitHub <ArrowUpRight size={18} />
           </a>
@@ -501,43 +464,48 @@ export default function Landing({onNotice, notice}) {
         </div>
       </section>
 
+      </main>
+
       <footer className="lp-footer" id="footer" ref={footer}>
         <div className="lp-footer-inner">
           <div className="lp-footer-top">
             <div data-reveal>
-              <h2>A little character.<br />A lot of possibility.</h2>
-              <p>Give your next project a face of its own.</p>
+              <h2>Give your app<br />a character.</h2>
+              <p>Choose a mascot, make it yours, and add it to your site.</p>
             </div>
-            <a className="lp-cta" href={studioHref(featured)}>Make it yours <ArrowUpRight size={20} /></a>
+            <a className="lp-cta" href={studioHref(featured)}>Open studio <ArrowUpRight size={20} /></a>
           </div>
           <div className="lp-footer-links">
             <a className="lp-logo" href="#home" aria-label="Mascotty home">
               <img src={asset('mascotty-logo.webp')} alt="" width="38" height="38" />
-              <span>Mascotty<small>Soft faces for sharp systems.</small></span>
+              <span>Mascotty<small>Open-source 3D mascots.</small></span>
             </a>
             <nav aria-label="Explore Mascotty">
               <h3>Meet the cast</h3>
               {mascots.map(m => <a key={m.id} href={studioHref(m)}>{m.name} <ArrowUpRight size={14} /></a>)}
             </nav>
             <nav aria-label="Developer resources">
-              <h3>Make it work</h3>
-              <a href="#developers">Quick start</a>
-              <a href={notes}>Integration guide</a>
+              <h3>Developers</h3>
+              <a href={notes}>Quick start</a>
+              <a href={docsHref('api')}>API reference</a>
               <a href={`${repositoryUrl}/tree/main/visage`} target="_blank" rel="noreferrer">Source code <ArrowUpRight size={14} /></a>
             </nav>
             <nav aria-label="Community resources">
-              <h3>Make it together</h3>
-              <a href="#community">Our community</a>
+              <h3>Community</h3>
+              <a href="#community">Get involved</a>
               <a href={docsHref('contributing')}>Contribute <ArrowUpRight size={14} /></a>
               <a href={`${repositoryUrl}/issues`} target="_blank" rel="noreferrer">Ideas & issues <ArrowUpRight size={14} /></a>
             </nav>
           </div>
-          {footerNear ? <Suspense fallback={<div className="lp-wordmark" aria-hidden="true"><span>Mascotty</span></div>}>
-            <FooterWordmark />
-          </Suspense> : <div className="lp-wordmark" aria-hidden="true"><span>Mascotty</span></div>}
+          <div className={`lp-wordmark${footerMarkReady ? ' is-ready' : ''}`} aria-hidden="true">
+            <span>Mascotty</span>
+            {footerNear ? <Suspense fallback={null}>
+              <FooterWordmark onReady={setFooterMarkReady} />
+            </Suspense> : null}
+          </div>
           <div className="lp-footer-bottom">
             <span>© {new Date().getFullYear()} Mascotty. Made for the community.</span>
-            <a href={repositoryUrl} target="_blank" rel="noreferrer"><Github size={16} /> Open source, open possibilities.</a>
+            <a href={repositoryUrl} target="_blank" rel="noreferrer"><Github size={16} /> Source on GitHub</a>
             <a href={docsHref('license')}>MIT licensed</a>
             <a href="#home">Back to top ↑</a>
           </div>

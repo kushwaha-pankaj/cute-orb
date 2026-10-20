@@ -1,13 +1,14 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef} from 'react';
 import * as THREE from 'three';
 import {FontLoader} from 'three/addons/loaders/FontLoader.js';
 import {TextGeometry} from 'three/addons/geometries/TextGeometry.js';
 import typeface from 'three/examples/fonts/helvetiker_bold.typeface.json';
 
-/** A small sculpture, rendered only while the footer is in view. */
-export default function FooterWordmark() {
+/** Canvas layer for the footer wordmark. Parent keeps the flat placeholder stable. */
+export default function FooterWordmark({onReady}) {
   const host = useRef(null);
-  const [ready, setReady] = useState(false);
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
 
   useEffect(() => {
     const el = host.current;
@@ -53,8 +54,18 @@ export default function FooterWordmark() {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     let visible = false;
     let frame = 0;
+    let revealed = false;
+    let revealFrame = 0;
 
     const render = () => renderer.render(scene, camera);
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      // Wait until the first WebGL frame is composited before crossfading.
+      revealFrame = requestAnimationFrame(() => {
+        revealFrame = requestAnimationFrame(() => onReadyRef.current?.(true));
+      });
+    };
     const animate = () => {
       mesh.rotation.x += (target.x - mesh.rotation.x) * 0.07;
       mesh.rotation.y += (target.y - mesh.rotation.y) * 0.07;
@@ -84,7 +95,7 @@ export default function FooterWordmark() {
       camera.left = -camera.right;
       camera.updateProjectionMatrix();
       render();
-      setReady(true);
+      reveal();
     });
     resize.observe(el);
     const observer = new IntersectionObserver(([entry]) => {
@@ -100,7 +111,14 @@ export default function FooterWordmark() {
       if (!frame && visible) update();
     };
     const reset = () => { target.x = -0.14; target.y = -0.075; if (!frame && visible) update(); };
-    const contextLost = event => { event.preventDefault(); setReady(false); visible = false; update(); };
+    const contextLost = event => {
+      event.preventDefault();
+      cancelAnimationFrame(revealFrame);
+      revealed = false;
+      visible = false;
+      update();
+      onReadyRef.current?.(false);
+    };
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerleave', reset);
     renderer.domElement.addEventListener('webglcontextlost', contextLost);
@@ -109,6 +127,7 @@ export default function FooterWordmark() {
 
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(revealFrame);
       observer.disconnect();
       resize.disconnect();
       el.removeEventListener('pointermove', move);
@@ -121,10 +140,9 @@ export default function FooterWordmark() {
       sides.dispose();
       renderer.dispose();
       renderer.domElement.remove();
+      onReadyRef.current?.(false);
     };
   }, []);
 
-  return <div className={`lp-wordmark${ready ? ' is-ready' : ''}`} ref={host} aria-hidden="true">
-    <span>Mascotty</span>
-  </div>;
+  return <div className="lp-wordmark-stage" ref={host} />;
 }
